@@ -1,0 +1,49 @@
+
+> porthub@0.1.0 build
+> next build
+
+ΓÜá Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\admin\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\package-lock.json
+
+(node:23684) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/admin/Downloads/porthub-walkie-talkie/porthub/next.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Γû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+(node:23684) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/admin/Downloads/porthub-walkie-talkie/porthub/next.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> Build error occurred
+Error: Turbopack build failed with 1 errors:
+./Downloads/porthub-walkie-talkie/porthub/app/globals.css
+Error evaluating Node.js code
+CssSyntaxError: C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\app\globals.css:23:3: Unknown word antialiased
+    at Input.error (Downloads/porthub-walkie-talkie/porthub/node_modules/postcss/lib/input.js:135:16) [C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\.next\build\chunks\3b2e7_34d21cd1._.js:4651:22]
+    at Parser.unknownWord (Downloads/porthub-walkie-talkie/porthub/node_modules/postcss/lib/parser.js:595:22) [C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\.next\build\chunks\3b2e7_34d21cd1._.js:5827:26]
+    at Parser.other (Downloads/porthub-walkie-talkie/porthub/node_modules/postcss/lib/parser.js:437:12) [C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\.next\build\chunks\3b2e7_34d21cd1._.js:5689:18]
+    at Parser.parse (Downloads/porthub-walkie-talkie/porthub/node_modules/postcss/lib/parser.js:472:16) [C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\.next\build\chunks\3b2e7_34d21cd1._.js:5716:26]
+    at parse (Downloads/porthub-walkie-talkie/porthub/node_modules/postcss/lib/parse.js:11:12) [C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\.next\build\chunks\3b2e7_34d21cd1._.js:5853:16]
+    at new LazyResult (Downloads/porthub-walkie-talkie/porthub/node_modules/postcss/lib/lazy-result.js:165:16) [C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\.next\build\chunks\3b2e7_34d21cd1._.js:6105:24]
+    at Processor.process (Downloads/porthub-walkie-talkie/porthub/node_modules/postcss/lib/processor.js:53:14) [C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\.next\build\chunks\3b2e7_34d21cd1._.js:6572:20]
+    at transform (turbopack:///[turbopack-node]/transforms/postcss.ts:70:51) [C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\.next\build\chunks\[root-of-the-server]__f0186c06._.js:146:52]
+    at run (turbopack:///[turbopack-node]/ipc/evaluate.ts:92:29) [C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\.next\build\chunks\[root-of-the-server]__f4c7ad9a._.js:443:37]
+    at run (turbopack:///[turbopack-node]/ipc/evaluate.ts:115:11) [C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\.next\build\chunks\[root-of-the-server]__f4c7ad9a._.js:464:25]
+
+Import trace:
+  Client Component Browser:
+    ./Downloads/porthub-walkie-talkie/porthub/app/globals.css [Client Component Browser]
+    ./Downloads/porthub-walkie-talkie/porthub/app/layout.tsx [Server Component]
+
+
+    at transform (turbopack:///[turbopack-node]/transforms/postcss.ts:70:51) [C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\.next\build\chunks\[root-of-the-server]__f0186c06._.js:146:52])
+    at run (turbopack:///[turbopack-node]/ipc/evaluate.ts:92:29) [C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\.next\build\chunks\[root-of-the-server]__f4c7ad9a._.js:443:37])
+    at run (turbopack:///[turbopack-node]/ipc/evaluate.ts:115:11) [C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\.next\build\chunks\[root-of-the-server]__f4c7ad9a._.js:464:25])
