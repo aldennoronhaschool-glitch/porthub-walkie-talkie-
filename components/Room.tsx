@@ -148,7 +148,7 @@ const EditProfileView = ({ user, setView }: { user: any, setView: any }) => {
 };
 
 export function Room() {
-    console.log("🚀 Ten Ten UI Loaded v2.0");
+    console.log("🚀 Ten Ten UI Loaded v2.1 (Desktop Fix)");
     const { user } = useUser();
     const [view, setView] = useState<ViewState>('DASHBOARD');
 
@@ -502,28 +502,31 @@ export function Room() {
     };
 
     return (
-        <div className="h-full w-full bg-black text-white relative">
-            <AnimatePresence mode="wait">
-                {view === 'DASHBOARD' && <Dashboard />}
-                {view === 'CALL' && <CallView />}
-                {view === 'ADD_FRIEND' && (
-                    <AddFriendView
-                        setView={setView}
-                        pin={addFriendPin}
-                        setPin={setAddFriendPin}
-                        onSend={handleSendFriendRequest}
-                        loading={loadingFriends}
-                        userPin={userPin}
-                    />
-                )}
-                {view === 'SETTINGS' && <SettingsView />}
-                {view === 'EDIT_PROFILE' && (
-                    <EditProfileView
-                        user={user}
-                        setView={setView}
-                    />
-                )}
-            </AnimatePresence>
+        <div className="h-full w-full bg-zinc-950 flex items-center justify-center">
+            {/* Desktop Container Wrapper */}
+            <div className="w-full max-w-md h-full bg-black text-white relative shadow-2xl overflow-hidden border-x border-zinc-800">
+                <AnimatePresence mode="wait">
+                    {view === 'DASHBOARD' && <Dashboard />}
+                    {view === 'CALL' && <CallView />}
+                    {view === 'ADD_FRIEND' && (
+                        <AddFriendView
+                            setView={setView}
+                            pin={addFriendPin}
+                            setPin={setAddFriendPin}
+                            onSend={handleSendFriendRequest}
+                            loading={loadingFriends}
+                            userPin={userPin}
+                        />
+                    )}
+                    {view === 'SETTINGS' && <SettingsView />}
+                    {view === 'EDIT_PROFILE' && (
+                        <EditProfileView
+                            user={user}
+                            setView={setView}
+                        />
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
     );
 
