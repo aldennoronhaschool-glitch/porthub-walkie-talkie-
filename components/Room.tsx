@@ -148,6 +148,7 @@ const EditProfileView = ({ user, setView }: { user: any, setView: any }) => {
 };
 
 export function Room() {
+    console.log("🚀 Ten Ten UI Loaded v2.0");
     const { user } = useUser();
     const [view, setView] = useState<ViewState>('DASHBOARD');
 
