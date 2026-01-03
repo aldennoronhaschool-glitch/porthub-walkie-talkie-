@@ -316,63 +316,92 @@ export function Room() {
     // --- Views ---
 
     const Dashboard = () => (
-        <div className="flex flex-col h-full p-6 pt-12 relative">
-            <div className="flex justify-between items-center mb-8">
-                <div className="w-10"></div>
-                <h1 className="text-white font-black text-2xl tracking-wider">CHANNELS</h1>
-                <button onClick={() => setView('SETTINGS')} className="p-2 bg-zinc-900 rounded-full text-white transition-colors hover:bg-zinc-800">
-                    <Settings className="w-6 h-6" />
-                </button>
-            </div>
+        <div className="flex flex-col h-full bg-black relative overflow-hidden">
+            {/* Background Ambient Glow */}
+            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[40%] bg-indigo-600/20 blur-[100px] rounded-full pointer-events-none"></div>
+            <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[40%] bg-purple-600/20 blur-[100px] rounded-full pointer-events-none"></div>
 
-            <div className="flex-1 overflow-y-auto pb-24">
-                <button
-                    onClick={() => setView('ADD_FRIEND')}
-                    className="w-full bg-zinc-900/50 border-2 border-dashed border-zinc-800 rounded-2xl p-4 flex items-center gap-3 mb-6 hover:bg-zinc-900 transition-all group"
-                >
-                    <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-700 group-hover:text-white transition-colors">
-                        <Plus className="w-6 h-6" />
+            <div className="flex-1 flex flex-col p-6 pt-12 z-10">
+                {/* Header */}
+                <div className="flex justify-between items-center mb-8">
+                    <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center">
+                        <span className="font-bold text-xs text-zinc-500">v1.2</span>
                     </div>
-                    <span className="text-zinc-500 font-bold group-hover:text-zinc-300 transition-colors">ADD NEW FRIEND</span>
-                </button>
+                    <h1 className="text-white font-black text-3xl tracking-tighter italic">PORTHUB</h1>
+                    <button onClick={() => setView('SETTINGS')} className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center text-white hover:bg-zinc-800 transition-colors">
+                        <Settings className="w-6 h-6" />
+                    </button>
+                </div>
 
+                {/* Friend Requests (Horizontal Scroll if many, or compact stack) */}
                 {friendRequests.received.length > 0 && (
                     <div className="mb-6">
-                        <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-3">Requests</h3>
-                        {friendRequests.received.map((req: any) => (
-                            <div key={req.id} className="bg-zinc-900 rounded-2xl p-4 flex justify-between mb-2">
-                                <span className="text-white font-bold">{req.sender?.username || 'Unknown User'}</span>
-                                <div className="flex gap-2">
-                                    <button onClick={() => handleFriendAction(req.id, 'accept')} className="text-green-500 font-bold">✓</button>
-                                    <button onClick={() => handleFriendAction(req.id, 'reject')} className="text-red-500 font-bold">✕</button>
+                        <h3 className="text-zinc-500 font-bold text-xs uppercase tracking-widest mb-3 ml-2">INBOX</h3>
+                        <div className="flex flex-col gap-2">
+                            {friendRequests.received.map((req: any) => (
+                                <div key={req.id} className="bg-zinc-900/80 backdrop-blur-md rounded-3xl p-4 flex justify-between items-center border border-zinc-800">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-2xl bg-indigo-500 flex items-center justify-center font-bold">?</div>
+                                        <span className="text-white font-bold">{req.sender?.username || 'Unknown'}</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleFriendAction(req.id, 'accept')} className="w-10 h-10 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center hover:bg-green-500 hover:text-white transition-all">✓</button>
+                                        <button onClick={() => handleFriendAction(req.id, 'reject')} className="w-10 h-10 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">✕</button>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 )}
 
-                <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-3">Friends ({friends.length})</h3>
-                <div className="space-y-2">
-                    {friends.map((friend: any) => {
-                        const isActive = activeFriend?.clerk_user_id === friend.clerk_user_id;
-                        const showSpeaking = isActive && isRemoteSpeaking;
-                        return (
-                            <button
-                                key={friend.clerk_user_id}
-                                onClick={() => { setActiveFriend(friend); setView('CALL'); }}
-                                className={`w-full rounded-2xl p-4 flex items-center gap-3 transition-all ${showSpeaking ? 'bg-indigo-900/50 border-2 border-indigo-500' : 'bg-zinc-900 hover:bg-zinc-800'}`}
-                            >
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-                                    {(friend.username || friend.pin || '?').charAt(0).toUpperCase()}
-                                </div>
-                                <div className="flex-1 text-left">
-                                    <p className="text-white font-bold">{friend.username || `User ${friend.pin}` || 'Unnamed Friend'}</p>
-                                    {showSpeaking && <p className="text-indigo-400 text-xs font-bold animate-pulse">Speaking...</p>}
-                                </div>
-                                <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-zinc-700'}`}></div>
-                            </button>
-                        );
-                    })}
+                {/* Main Grid */}
+                <div className="flex-1 overflow-y-auto">
+                    <div className="grid grid-cols-2 gap-4 pb-24">
+                        {/* Add Friend Card */}
+                        <button
+                            onClick={() => setView('ADD_FRIEND')}
+                            className="aspect-square bg-zinc-900/50 border-2 border-dashed border-zinc-800 rounded-[2rem] flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 hover:border-zinc-700 transition-all group"
+                        >
+                            <div className="w-14 h-14 rounded-2xl bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-white group-hover:text-black transition-colors">
+                                <Plus className="w-8 h-8" />
+                            </div>
+                            <span className="text-zinc-500 font-bold text-sm tracking-wide group-hover:text-white">ADD</span>
+                        </button>
+
+                        {/* Friend Cards */}
+                        {friends.map((friend: any) => {
+                            const isActive = activeFriend?.clerk_user_id === friend.clerk_user_id;
+                            const showSpeaking = isActive && isRemoteSpeaking;
+
+                            return (
+                                <button
+                                    key={friend.clerk_user_id}
+                                    onClick={() => { setActiveFriend(friend); setView('CALL'); }}
+                                    className={`relative aspect-square rounded-[2rem] p-4 flex flex-col items-center justify-between transition-all overflow-hidden
+                                        ${showSpeaking ? 'bg-indigo-600 ring-4 ring-indigo-400 ring-offset-4 ring-offset-black scale-105 z-10' : 'bg-zinc-900 hover:bg-zinc-800'}
+                                    `}
+                                >
+                                    {/* Status Dot */}
+                                    <div className={`absolute top-4 right-4 w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-zinc-700'}`}></div>
+
+                                    {/* Avatar */}
+                                    <div className="w-20 h-20 rounded-[1.2rem] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-3xl shadow-lg mt-2">
+                                        {(friend.username || friend.pin || '?').charAt(0).toUpperCase()}
+                                    </div>
+
+                                    {/* Name */}
+                                    <div className="w-full text-center">
+                                        <p className="text-white font-bold text-sm truncate px-2">
+                                            {friend.username || `User ${friend.pin}` || 'Unnamed'}
+                                        </p>
+                                        {showSpeaking && (
+                                            <p className="text-white/80 text-[10px] font-bold animate-pulse mt-1 tracking-widest uppercase">TALKING</p>
+                                        )}
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </div>
