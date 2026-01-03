@@ -460,8 +460,14 @@ export function Room() {
                                     <div className={`absolute top-4 right-4 w-3 h-3 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_10px_#22c55e]' : 'bg-zinc-700'}`}></div>
 
                                     {/* Avatar */}
-                                    <div className="w-20 h-20 rounded-[1.2rem] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-3xl shadow-lg mt-2">
-                                        {(friend.username || friend.pin || '?').charAt(0).toUpperCase()}
+                                    <div className="w-20 h-20 rounded-[1.2rem] bg-zinc-800 shadow-lg mt-2 overflow-hidden ring-2 ring-white/10">
+                                        {friend.image_url ? (
+                                            <img src={friend.image_url} alt={friend.username} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-3xl">
+                                                {(friend.username || friend.pin || '?').charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Name */}
