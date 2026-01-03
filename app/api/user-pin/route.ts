@@ -24,7 +24,7 @@ export async function GET() {
         console.log('📡 Checking for existing PIN in database...');
         const { data: existingPin, error: fetchError } = await supabase
             .from('user_pins')
-            .select('pin, username, image_url')
+            .select('pin, username')
             .eq('clerk_user_id', userId)
             .single();
 
@@ -38,11 +38,7 @@ export async function GET() {
 
         if (existingPin) {
             console.log('✅ Found existing PIN:', existingPin.pin);
-            return NextResponse.json({
-                pin: existingPin.pin,
-                username: existingPin.username,
-                image_url: existingPin.image_url
-            });
+            return NextResponse.json({ pin: existingPin.pin, username: existingPin.username });
         }
 
         console.log('🆕 No existing PIN, generating new one...');
@@ -102,11 +98,11 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { username, image_url } = body;
+        const { username } = body;
+        // removed image_url for stability until DB migration is confirmed
 
         const updateData: any = { updated_at: new Date().toISOString() };
         if (username !== undefined) updateData.username = username;
-        if (image_url !== undefined) updateData.image_url = image_url;
 
         // Update profile
         const { data, error } = await supabase
@@ -122,11 +118,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
         }
 
-        return NextResponse.json({
-            pin: data.pin,
-            username: data.username,
-            image_url: data.image_url
-        });
+        return NextResponse.json({ pin: data.pin, username: data.username });
     } catch (error) {
         console.error('Error in user-pin POST:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
