@@ -181,9 +181,22 @@ export function Room() {
         return () => { cleanupBackgroundAudio(); };
     }, []);
 
-    // Fetch User PIN & Friends
+    // Fetch User PIN & Friends & Auto-Sync Name
     useEffect(() => {
         if (!user) return;
+
+        const syncProfile = async () => {
+            // Auto-sync publicly visible name to Supabase
+            if (user.firstName) {
+                try {
+                    await fetch('/api/user-pin', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: user.firstName })
+                    });
+                } catch (e) { console.error("Auto-sync failed", e); }
+            }
+        };
 
         const fetchPin = async () => {
             try {
@@ -218,6 +231,7 @@ export function Room() {
             } catch (e) { console.error("❌ Error polling:", e); }
         };
 
+        syncProfile();
         fetchPin();
         fetchFriends();
 
