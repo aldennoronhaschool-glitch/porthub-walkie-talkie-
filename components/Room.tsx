@@ -167,7 +167,46 @@ export function Room() {
     // UI State
     const [userPin, setUserPin] = useState<string>('');
     const [friends, setFriends] = useState<any[]>([]);
+    const friendsRef = useRef<any[]>([]); // Ref to access friends inside effect without trigger
+    useEffect(() => { friendsRef.current = friends; }, [friends]);
+
     const [friendRequests, setFriendRequests] = useState<{ received: any[], sent: any[] }>({ received: [], sent: [] });
+
+    // Auto-Answer / Global Call Signaling
+    const sendCallSignal = async (targetId: string) => {
+        const channel = supabase.channel('global-calls');
+        channel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await channel.send({
+                    type: 'broadcast',
+                    event: 'incoming',
+                    payload: { targetId, callerId: user?.id }
+                });
+                // Keep channel open briefly or rely on auto-cleanup? 
+                // Better to simple remove after short delay or let it persist if reused.
+                // For now, simple send & forget.
+                setTimeout(() => supabase.removeChannel(channel), 1000);
+            }
+        });
+    };
+
+    useEffect(() => {
+        if (!user) return;
+        const channel = supabase.channel('global-calls');
+        channel
+            .on('broadcast', { event: 'incoming' }, ({ payload }) => {
+                if (payload.targetId === user.id) {
+                    console.log("📞 Incoming call auto-answer:", payload.callerId);
+                    const caller = friendsRef.current.find((f: any) => f.clerk_user_id === payload.callerId);
+                    if (caller) {
+                        setActiveFriend(caller);
+                        setView('CALL');
+                    }
+                }
+            })
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, [user]);
     const [loadingFriends, setLoadingFriends] = useState(false);
     const [addFriendPin, setAddFriendPin] = useState("");
 
@@ -408,7 +447,11 @@ export function Room() {
                             return (
                                 <button
                                     key={friend.clerk_user_id}
-                                    onClick={() => { setActiveFriend(friend); setView('CALL'); }}
+                                    onClick={() => {
+                                        setActiveFriend(friend);
+                                        setView('CALL');
+                                        sendCallSignal(friend.clerk_user_id);
+                                    }}
                                     className={`relative aspect-square rounded-[2rem] p-4 flex flex-col items-center justify-between transition-all overflow-hidden
                                         ${showSpeaking ? 'bg-indigo-600 ring-4 ring-indigo-400 ring-offset-4 ring-offset-black scale-105 z-10' : 'bg-zinc-900 hover:bg-zinc-800'}
                                     `}
