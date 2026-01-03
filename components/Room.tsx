@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@clerk/nextjs";
 import { requestNotificationPermission, notifyUserJoined, notifyUserLeft } from "@/lib/notifications";
 import { setupBackgroundAudio, cleanupBackgroundAudio } from "@/lib/wakeLock";
-// import { useAudioRecorder, useAudioPlayer } from "@/hooks/useAudio"; // Deprecated
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { supabase } from "@/lib/supabase";
 
@@ -61,6 +60,92 @@ const AddFriendView = ({
     );
 };
 
+const EditProfileView = ({ user, setView }: { user: any, setView: any }) => {
+    const [username, setUsername] = useState(user?.firstName || "");
+    const [uploading, setUploading] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !user) return;
+        try {
+            setUploading(true);
+            await user.setProfileImage({ file });
+            alert('Profile picture updated!');
+        } catch (error) { console.error('Error uploading image:', error); alert('Failed to upload image'); }
+        finally { setUploading(false); }
+    };
+
+    const handleSaveUsername = async () => {
+        if (!user || !username.trim()) return;
+        try {
+            setSaving(true);
+            // 1. Update Clerk
+            await user.update({ firstName: username.trim() });
+
+            // 2. Update Supabase (so friends see the new name)
+            await fetch('/api/user-pin', {
+                method: 'POST',
+                body: JSON.stringify({ username: username.trim() })
+            });
+
+            alert('Username updated!');
+            setView('SETTINGS');
+        } catch (error) { console.error('Error updating username:', error); alert('Failed to update username'); }
+        finally { setSaving(false); }
+    };
+
+    return (
+        <div key="edit-profile-view" className="flex flex-col h-full bg-black p-6 pt-12">
+            <div className="flex items-center mb-8 relative">
+                <button onClick={() => setView('SETTINGS')} className="absolute left-0 p-2 bg-zinc-900 rounded-full text-white">
+                    <ChevronRight className="w-6 h-6 rotate-180" />
+                </button>
+                <h2 className="mx-auto text-xl font-bold text-white">Edit Profile</h2>
+            </div>
+
+            <div className="flex-1 flex flex-col items-center">
+                <div className="relative mb-8">
+                    <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-zinc-800">
+                        <img src={user?.imageUrl} alt="Profile" className="w-full h-full object-cover" />
+                    </div>
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full flex items-center justify-center text-black hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                    >
+                        {uploading ? '...' : '📷'}
+                    </button>
+                    <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                </div>
+
+                <div className="w-full max-w-md mb-4">
+                    <label className="text-zinc-500 text-sm font-bold mb-2 block">USERNAME</label>
+                    <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-4 text-white text-lg font-bold outline-none focus:border-white transition-colors"
+                        placeholder="Enter your name"
+                    />
+                </div>
+            </div>
+
+            <button
+                onClick={handleSaveUsername}
+                disabled={saving || !username.trim()}
+                className={`w-full py-4 rounded-2xl font-bold text-lg transition-all ${saving || !username.trim()
+                    ? 'bg-zinc-800 text-zinc-600'
+                    : 'bg-white text-black hover:bg-zinc-200'
+                    }`}
+            >
+                {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+        </div>
+    );
+};
+
 export function Room() {
     const { user } = useUser();
     const [view, setView] = useState<ViewState>('DASHBOARD');
@@ -84,21 +169,13 @@ export function Room() {
     const [loadingFriends, setLoadingFriends] = useState(false);
     const [addFriendPin, setAddFriendPin] = useState(""); // Lifted state for Add Friend input
 
-    // Emoji & Misc
-    const [floatingEmojis, setFloatingEmojis] = useState<Array<{ id: number; emoji: string; x: number }>>([]);
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const emojiIdCounter = useRef(0);
-    const emojiIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    const [isSilentMode, setIsSilentMode] = useState(false);
-    const [notificationsEnabled, setNotificationsEnabled] = useState(false);
     const [isHandsFree, setIsHandsFree] = useState(false);
 
     // Initial Setup
     useEffect(() => {
         const init = async () => {
             const granted = await requestNotificationPermission();
-            setNotificationsEnabled(granted);
-            await setupBackgroundAudio(); // Keep audio context alive
+            await setupBackgroundAudio();
         };
         init();
         return () => { cleanupBackgroundAudio(); };
@@ -123,7 +200,6 @@ export function Room() {
         };
 
         const fetchFriends = async () => {
-            console.log("🔄 Polling friends/requests...");
             try {
                 const [fRes, rRes] = await Promise.all([
                     fetch('/api/friends'),
@@ -132,13 +208,11 @@ export function Room() {
 
                 if (fRes.ok) {
                     const fData = await fRes.json();
-                    // console.log("👥 Friends Data:", fData);
                     setFriends(fData.friends || []);
                 }
 
                 if (rRes.ok) {
                     const rData = await rRes.json();
-                    // console.log("📩 Requests Data:", rData);
                     setFriendRequests(rData);
                 }
             } catch (e) { console.error("❌ Error polling:", e); }
@@ -266,7 +340,6 @@ export function Room() {
                 <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-3">Friends ({friends.length})</h3>
                 <div className="space-y-2">
                     {friends.map((friend: any) => {
-                        // For now, only show speaking status if connected
                         const isActive = activeFriend?.clerk_user_id === friend.clerk_user_id;
                         const showSpeaking = isActive && isRemoteSpeaking;
                         return (
@@ -309,7 +382,6 @@ export function Room() {
             </div>
 
             <div className="flex-1 flex flex-col items-center justify-center">
-                {/* Main PTT Button */}
                 <div className="relative w-64 h-64">
                     {isSpeaking && (
                         <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-20"></div>
@@ -368,12 +440,15 @@ export function Room() {
                     />
                 )}
                 {view === 'SETTINGS' && <SettingsView />}
-                {view === 'EDIT_PROFILE' && <EditProfileView />}
+                {view === 'EDIT_PROFILE' && (
+                    <EditProfileView
+                        user={user}
+                        setView={setView}
+                    />
+                )}
             </AnimatePresence>
         </div>
     );
-
-    // --- Auxiliary Views ---
 
     function SettingsView() {
         return (
@@ -429,84 +504,6 @@ export function Room() {
                     className={`w-14 h-8 rounded-full p-1 transition-colors ${isChecked ? 'bg-white' : 'bg-zinc-800'}`}
                 >
                     <div className={`w-6 h-6 rounded-full bg-black transition-transform ${isChecked ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                </button>
-            </div>
-        );
-    };
-
-    function EditProfileView() {
-        const [username, setUsername] = useState(user?.firstName || "");
-        const [uploading, setUploading] = useState(false);
-        const [saving, setSaving] = useState(false);
-        const fileInputRef = useRef<HTMLInputElement>(null);
-
-        const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-            const file = e.target.files?.[0];
-            if (!file || !user) return;
-            try {
-                setUploading(true);
-                await user.setProfileImage({ file });
-                alert('Profile picture updated!');
-            } catch (error) { console.error('Error uploading image:', error); alert('Failed to upload image'); }
-            finally { setUploading(false); }
-        };
-
-        const handleSaveUsername = async () => {
-            if (!user || !username.trim()) return;
-            try {
-                setSaving(true);
-                await user.update({ firstName: username.trim() });
-                alert('Username updated!');
-                setView('SETTINGS');
-            } catch (error) { console.error('Error updating username:', error); alert('Failed to update username'); }
-            finally { setSaving(false); }
-        };
-
-        return (
-            <div className="flex flex-col h-full bg-black p-6 pt-12">
-                <div className="flex items-center mb-8 relative">
-                    <button onClick={() => setView('SETTINGS')} className="absolute left-0 p-2 bg-zinc-900 rounded-full text-white">
-                        <ChevronRight className="w-6 h-6 rotate-180" />
-                    </button>
-                    <h2 className="mx-auto text-xl font-bold text-white">Edit Profile</h2>
-                </div>
-
-                <div className="flex-1 flex flex-col items-center">
-                    <div className="relative mb-8">
-                        <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-zinc-800">
-                            <img src={user?.imageUrl} alt="Profile" className="w-full h-full object-cover" />
-                        </div>
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={uploading}
-                            className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full flex items-center justify-center text-black hover:bg-zinc-200 transition-colors disabled:opacity-50"
-                        >
-                            {uploading ? '...' : '📷'}
-                        </button>
-                        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                    </div>
-
-                    <div className="w-full max-w-md mb-4">
-                        <label className="text-zinc-500 text-sm font-bold mb-2 block">USERNAME</label>
-                        <input
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-4 text-white text-lg font-bold outline-none focus:border-white transition-colors"
-                            placeholder="Enter your name"
-                        />
-                    </div>
-                </div>
-
-                <button
-                    onClick={handleSaveUsername}
-                    disabled={saving || !username.trim()}
-                    className={`w-full py-4 rounded-2xl font-bold text-lg transition-all ${saving || !username.trim()
-                        ? 'bg-zinc-800 text-zinc-600'
-                        : 'bg-white text-black hover:bg-zinc-200'
-                        }`}
-                >
-                    {saving ? 'Saving...' : 'Save Changes'}
                 </button>
             </div>
         );
