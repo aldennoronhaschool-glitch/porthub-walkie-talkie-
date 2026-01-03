@@ -24,7 +24,7 @@ export async function GET() {
         console.log('📡 Checking for existing PIN in database...');
         const { data: existingPin, error: fetchError } = await supabase
             .from('user_pins')
-            .select('pin, username')
+            .select('pin, username, image_url')
             .eq('clerk_user_id', userId)
             .single();
 
@@ -38,7 +38,11 @@ export async function GET() {
 
         if (existingPin) {
             console.log('✅ Found existing PIN:', existingPin.pin);
-            return NextResponse.json({ pin: existingPin.pin, username: existingPin.username });
+            return NextResponse.json({
+                pin: existingPin.pin,
+                username: existingPin.username,
+                image_url: existingPin.image_url
+            });
         }
 
         console.log('🆕 No existing PIN, generating new one...');
@@ -97,22 +101,32 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { username } = await request.json();
+        const body = await request.json();
+        const { username, image_url } = body;
 
-        // Update username
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (username !== undefined) updateData.username = username;
+        if (image_url !== undefined) updateData.image_url = image_url;
+
+        // Update profile
         const { data, error } = await supabase
             .from('user_pins')
-            .update({ username, updated_at: new Date().toISOString() })
+            .update(updateData)
             .eq('clerk_user_id', userId)
             .select()
             .single();
 
         if (error) {
-            console.error('Error updating username:', error);
-            return NextResponse.json({ error: 'Failed to update username' }, { status: 500 });
+            console.error('Error updating profile:', error);
+            // Don't fail if column missing (fallback) but better to fail
+            return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
         }
 
-        return NextResponse.json({ pin: data.pin, username: data.username });
+        return NextResponse.json({
+            pin: data.pin,
+            username: data.username,
+            image_url: data.image_url
+        });
     } catch (error) {
         console.error('Error in user-pin POST:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

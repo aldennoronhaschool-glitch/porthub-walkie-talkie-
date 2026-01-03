@@ -87,6 +87,7 @@ const EditProfileView = ({ user, setView }: { user: any, setView: any }) => {
             // 2. Update Supabase (so friends see the new name)
             await fetch('/api/user-pin', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: username.trim() })
             });
 
@@ -186,13 +187,16 @@ export function Room() {
         if (!user) return;
 
         const syncProfile = async () => {
-            // Auto-sync publicly visible name to Supabase
+            // Auto-sync publicly visible name & image to Supabase
             if (user.firstName) {
                 try {
                     await fetch('/api/user-pin', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: user.firstName })
+                        body: JSON.stringify({
+                            username: user.firstName,
+                            image_url: user.imageUrl
+                        })
                     });
                 } catch (e) { console.error("Auto-sync failed", e); }
             }
@@ -407,65 +411,94 @@ export function Room() {
         </div>
     );
 
-    const CallView = () => (
-        <div className="flex-1 flex flex-col h-full bg-black p-6 relative">
-            <div className="flex justify-between items-start mb-8">
-                <button onClick={() => { setActiveFriend(null); setView('DASHBOARD'); }} className="p-2 bg-zinc-900 rounded-full text-white"><ChevronRight className="w-6 h-6 rotate-180" /></button>
-                <div className="flex flex-col items-center">
-                    <h2 className="text-zinc-500 font-bold text-sm tracking-widest uppercase">TALKING TO</h2>
-                    <h1 className="text-white font-black text-2xl">{activeFriend?.username}</h1>
-                    <span className={`text-xs font-bold mt-1 ${connectionStatus === 'connected' ? 'text-green-500' : 'text-yellow-500'}`}>
-                        {connectionStatus === 'connected' ? 'CONNECTED' : 'CONNECTING...'}
-                    </span>
-                    {isRemoteSpeaking && (
-                        <span className="text-indigo-400 text-xs font-bold animate-pulse mt-1">THEY ARE SPEAKING...</span>
-                    )}
-                </div>
-                <div className="w-10"></div>
-            </div>
+    const CallView = () => {
+        // Ten Ten Style Layout
+        const displayImage = activeFriend?.image_url;
 
-            <div className="flex-1 flex flex-col items-center justify-center">
-                <div className="relative w-64 h-64">
-                    {isSpeaking && (
-                        <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-20"></div>
-                    )}
-                    <button
-                        onMouseDown={handleStartTalk}
-                        onMouseUp={handleStopTalk}
-                        onMouseLeave={handleStopTalk}
-                        onTouchStart={handleStartTalk}
-                        onTouchEnd={handleStopTalk}
-                        className={`relative w-full h-full rounded-full border-8 transition-all flex items-center justify-center
-                            ${isSpeaking ? 'border-indigo-500 bg-indigo-500/10 scale-95' : 'border-zinc-800 bg-zinc-900 hover:border-zinc-700'}
-                            ${isHandsFree ? 'border-red-500 bg-red-500/10' : ''}
-                        `}
-                    >
-                        {isSpeaking ? (
-                            <div className="flex flex-col items-center gap-2">
-                                <Radio className="w-20 h-20 text-indigo-500 animate-pulse" />
-                                <span className="text-indigo-400 font-bold tracking-wider">ON AIR</span>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center gap-2">
-                                <Mic className="w-20 h-20 text-white" />
-                                <span className="text-zinc-500 font-bold tracking-wider">HOLD TO TALK</span>
-                            </div>
-                        )}
+        return (
+            <div className="flex-1 flex flex-col h-full bg-black relative overflow-hidden">
+                {/* 1. Full Screen Background Image (Blurred/Darkened) */}
+                {displayImage ? (
+                    <div className="absolute inset-0 z-0">
+                        <img src={displayImage} className="w-full h-full object-cover opacity-60 blur-2xl scale-110" alt="bg" />
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black/90"></div>
+                    </div>
+                ) : (
+                    // Fallback Gradient
+                    <div className="absolute inset-0 z-0 bg-gradient-to-b from-zinc-900 to-black"></div>
+                )}
+
+                {/* 2. Top Controls */}
+                <div className="relative z-10 p-6 pt-12 flex justify-between items-start">
+                    <button onClick={() => { setActiveFriend(null); setView('DASHBOARD'); }} className="p-3 bg-zinc-900/50 backdrop-blur-md rounded-full text-white hover:bg-zinc-800 transition-all border border-white/10">
+                        <ChevronRight className="w-6 h-6 rotate-180" />
+                    </button>
+                    <div className="flex flex-col items-center">
+                        <div className={`px-4 py-1 rounded-full backdrop-blur-md border ${connectionStatus === 'connected' ? 'bg-green-500/20 border-green-500/30 text-green-400' : 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400'} font-bold text-[10px] tracking-widest uppercase mb-2`}>
+                            {connectionStatus === 'connected' ? 'LIVE' : 'CONNECTING...'}
+                        </div>
+                    </div>
+                    <button onClick={toggleHandsFree} className={`p-3 rounded-full backdrop-blur-md transition-all border border-white/10 ${isHandsFree ? 'bg-red-500 text-white border-red-500' : 'bg-zinc-900/50 text-white hover:bg-zinc-800'}`}>
+                        {isHandsFree ? <Unlock className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
                     </button>
                 </div>
-            </div>
 
-            <div className="h-20 flex justify-center items-center">
-                <button
-                    onClick={toggleHandsFree}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition-all ${isHandsFree ? 'bg-red-500 text-white' : 'bg-zinc-900 text-zinc-400'}`}
-                >
-                    {isHandsFree ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                    {isHandsFree ? 'HANDS FREE ON' : 'HANDS FREE'}
-                </button>
+                {/* 3. Center Content (Friend Info) */}
+                <div className="relative z-10 flex-1 flex flex-col items-center justify-center -mt-20">
+                    <div className="relative w-48 h-48 mb-6">
+                        {isRemoteSpeaking && (
+                            <div className="absolute inset-0 rounded-full border-4 border-indigo-500 animate-ping opacity-50"></div>
+                        )}
+                        <div className={`w-full h-full rounded-full overflow-hidden border-4 shadow-2xl ${isRemoteSpeaking ? 'border-indigo-500 shadow-indigo-500/50' : 'border-white/10'}`}>
+                            {displayImage ? (
+                                <img src={displayImage} className="w-full h-full object-cover" alt="friend" />
+                            ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-6xl shadow-inner">
+                                    {(activeFriend?.username || activeFriend?.pin || '?').charAt(0).toUpperCase()}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <h1 className="text-white font-black text-5xl mb-2 text-center drop-shadow-xl tracking-tight">{activeFriend?.username || 'Unknown'}</h1>
+                    <p className="text-zinc-400 font-bold tracking-[0.2em] text-xs uppercase">{isRemoteSpeaking ? 'IS SPEAKING...' : 'HOLD TO TALK'}</p>
+                </div>
+
+                {/* 4. Bottom PTT Button (Ten Ten Style) */}
+                <div className="relative z-10 pb-16 flex flex-col items-center justify-end w-full">
+
+                    <div className="relative w-full max-w-[220px] aspect-square touch-none">
+                        {isSpeaking && (
+                            <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-30 delay-75"></div>
+                        )}
+                        {isSpeaking && (
+                            <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-50"></div>
+                        )}
+
+                        {/* Button */}
+                        <button
+                            onMouseDown={handleStartTalk}
+                            onMouseUp={handleStopTalk}
+                            onMouseLeave={handleStopTalk}
+                            onTouchStart={handleStartTalk}
+                            onTouchEnd={handleStopTalk}
+                            className={`relative w-full h-full rounded-full transition-all duration-100 flex items-center justify-center shadow-2xl overflow-hidden
+                                ${isSpeaking
+                                    ? 'bg-indigo-600 scale-95 border-8 border-indigo-400/50 ring-4 ring-indigo-500/30'
+                                    : 'bg-zinc-800 hover:bg-zinc-700 border-8 border-zinc-700 ring-4 ring-black/40'}
+                            `}
+                        >
+                            {isSpeaking ? (
+                                <div className="w-24 h-24 bg-white/20 rounded-full animate-pulse blur-xl"></div>
+                            ) : (
+                                <div className="w-full h-full bg-gradient-to-b from-white/5 to-transparent"></div>
+                            )}
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <div className="h-full w-full bg-black text-white relative">
