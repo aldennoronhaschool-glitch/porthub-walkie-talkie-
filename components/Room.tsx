@@ -169,9 +169,35 @@ export function Room() {
     const [friends, setFriends] = useState<any[]>([]);
     const [friendRequests, setFriendRequests] = useState<{ received: any[], sent: any[] }>({ received: [], sent: [] });
     const [loadingFriends, setLoadingFriends] = useState(false);
-    const [addFriendPin, setAddFriendPin] = useState(""); // Lifted state for Add Friend input
+    const [addFriendPin, setAddFriendPin] = useState("");
+
+    // Presence State
+    const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
 
     const [isHandsFree, setIsHandsFree] = useState(false);
+
+    // Presence Subscription
+    useEffect(() => {
+        if (!user) return;
+        const channel = supabase.channel('global-presence');
+        channel
+            .on('presence', { event: 'sync' }, () => {
+                const newState = channel.presenceState();
+                const ids = new Set<string>();
+                Object.values(newState).forEach((users: any) => {
+                    users.forEach((u: any) => {
+                        if (u.userId) ids.add(u.userId);
+                    });
+                });
+                setOnlineUsers(ids);
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    await channel.track({ userId: user.id });
+                }
+            });
+        return () => { supabase.removeChannel(channel); };
+    }, [user]);
 
     // Initial Setup
     useEffect(() => {
@@ -376,6 +402,7 @@ export function Room() {
                         {/* Friend Cards */}
                         {friends.map((friend: any) => {
                             const isActive = activeFriend?.clerk_user_id === friend.clerk_user_id;
+                            const isOnline = onlineUsers.has(friend.clerk_user_id);
                             const showSpeaking = isActive && isRemoteSpeaking;
 
                             return (
@@ -387,7 +414,7 @@ export function Room() {
                                     `}
                                 >
                                     {/* Status Dot */}
-                                    <div className={`absolute top-4 right-4 w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-zinc-700'}`}></div>
+                                    <div className={`absolute top-4 right-4 w-3 h-3 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_10px_#22c55e]' : 'bg-zinc-700'}`}></div>
 
                                     {/* Avatar */}
                                     <div className="w-20 h-20 rounded-[1.2rem] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-3xl shadow-lg mt-2">
@@ -462,7 +489,16 @@ export function Room() {
                     </div>
 
                     <h1 className="text-white font-black text-5xl mb-2 text-center drop-shadow-xl tracking-tight">{activeFriend?.username || 'Unknown'}</h1>
-                    <p className="text-zinc-400 font-bold tracking-[0.2em] text-xs uppercase">{isRemoteSpeaking ? 'IS SPEAKING...' : 'HOLD TO TALK'}</p>
+                    <p className={`font-bold tracking-[0.2em] text-xs uppercase ${onlineUsers.has(activeFriend?.clerk_user_id) ? 'text-green-400' : 'text-zinc-500'}`}>
+                        {isRemoteSpeaking
+                            ? 'IS SPEAKING...'
+                            : (onlineUsers.has(activeFriend?.clerk_user_id) ? 'ONLINE' : 'OFFLINE')}
+                    </p>
+                    {connectionStatus !== 'connected' && (
+                        <p className="text-zinc-600 text-[8px] font-bold mt-4 uppercase animate-pulse">
+                            Wait for them to join...
+                        </p>
+                    )}
                 </div>
 
                 {/* 4. Bottom PTT Button (Ten Ten Style) */}

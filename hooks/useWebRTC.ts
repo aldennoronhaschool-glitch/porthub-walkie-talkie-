@@ -11,7 +11,7 @@ const RTC_CONFIG = {
         { urls: 'stun:stun3.l.google.com:19302' },
         { urls: 'stun:stun4.l.google.com:19302' },
     ],
-    iceCandidatePoolSize: 10,
+    iceCandidatePoolSize: 0,
 };
 
 export const useWebRTC = (userId: string | undefined, activeFriendId: string | undefined) => {
