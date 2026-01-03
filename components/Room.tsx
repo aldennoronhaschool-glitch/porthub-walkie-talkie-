@@ -77,21 +77,36 @@ export function Room() {
         };
 
         const fetchFriends = async () => {
+            console.log("🔄 Polling friends/requests...");
             try {
                 const [fRes, rRes] = await Promise.all([
                     fetch('/api/friends'),
                     fetch('/api/friend-request')
                 ]);
-                if (fRes.ok) setFriends((await fRes.json()).friends || []);
-                if (rRes.ok) setFriendRequests(await rRes.json());
-            } catch (e) { console.error(e); }
+
+                if (fRes.ok) {
+                    const fData = await fRes.json();
+                    console.log("👥 Friends Data:", fData);
+                    setFriends(fData.friends || []);
+                } else {
+                    console.error("❌ Failed to fetch friends");
+                }
+
+                if (rRes.ok) {
+                    const rData = await rRes.json();
+                    console.log("📩 Requests Data:", rData);
+                    setFriendRequests(rData);
+                } else {
+                    console.error("❌ Failed to fetch requests");
+                }
+            } catch (e) { console.error("❌ Error polling:", e); }
         };
 
         fetchPin();
         fetchFriends();
 
-        // Refresh friends every 30s to keep list fresh
-        const interval = setInterval(fetchFriends, 30000);
+        // Refresh friends every 3s to keep list fast
+        const interval = setInterval(fetchFriends, 3000);
         return () => clearInterval(interval);
     }, [user]);
 
@@ -118,38 +133,54 @@ export function Room() {
         }
     };
 
-    // --- Friend Management Handlers --- (Kept similar to before)
+    // --- Friend Management Handlers ---
     const handleSendFriendRequest = async (pin: string) => {
         if (!pin) return;
         setLoadingFriends(true);
         try {
-            await fetch('/api/friend-request', {
+            const res = await fetch('/api/friend-request', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pin: pin.toUpperCase() })
             });
-            alert("Request sent!");
-            setView('DASHBOARD');
-        } catch (e) { alert("Failed to send"); }
-        finally { setLoadingFriends(false); }
+
+            const data = await res.json();
+
+            if (res.ok) {
+                alert(data.message || "Request sent!");
+                setView('DASHBOARD');
+            } else {
+                alert(`Failed: ${data.error}`);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Failed to send request (Network Error)");
+        } finally {
+            setLoadingFriends(false);
+        }
     };
 
     const handleFriendAction = async (requestId: string, action: 'accept' | 'reject') => {
         try {
-            await fetch('/api/friend-request', {
+            const res = await fetch('/api/friend-request', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ requestId, action })
             });
-            // Quick refresh
-            const [fRes, rRes] = await Promise.all([
-                fetch('/api/friends'),
-                fetch('/api/friend-request')
-            ]);
-            if (fRes.ok) setFriends((await fRes.json()).friends || []);
-            if (rRes.ok) setFriendRequests(await rRes.json());
-            alert(`Request ${action}ed!`);
-        } catch (e) { alert("Action failed"); }
+
+            if (res.ok) {
+                // Quick refresh
+                const [fRes, rRes] = await Promise.all([
+                    fetch('/api/friends'),
+                    fetch('/api/friend-request')
+                ]);
+                if (fRes.ok) setFriends((await fRes.json()).friends || []);
+                if (rRes.ok) setFriendRequests(await rRes.json());
+                alert(`Request ${action}ed!`);
+            } else {
+                alert("Action failed");
+            }
+        } catch (e) { alert("Action failed (Network Error)"); }
     };
 
     // --- Views ---
