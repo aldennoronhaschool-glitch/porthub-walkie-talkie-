@@ -7,8 +7,12 @@ let audioContext: AudioContext | null = null;
  * Request a wake lock to keep the screen on and prevent the device from sleeping
  */
 export const requestWakeLock = async (): Promise<boolean> => {
-    if (!('wakeLock' in navigator)) {
-        console.warn('Wake Lock API not supported');
+    if (typeof navigator === 'undefined' || !('wakeLock' in navigator)) {
+        return false;
+    }
+
+    // Wake Lock can only be acquired when page is visible
+    if (document.visibilityState !== 'visible') {
         return false;
     }
 
@@ -22,7 +26,11 @@ export const requestWakeLock = async (): Promise<boolean> => {
         });
 
         return true;
-    } catch (err) {
+    } catch (err: any) {
+        // Ignore common errors
+        if (err.name === 'NotAllowedError') {
+            return false;
+        }
         console.error('Failed to acquire wake lock:', err);
         return false;
     }

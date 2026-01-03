@@ -5,22 +5,38 @@ import { generateUniquePin } from '@/lib/pinGenerator';
 
 export async function GET() {
     try {
+        console.log('🔍 user-pin API called');
         const { userId } = await auth();
 
+        console.log('👤 User ID:', userId);
+
         if (!userId) {
+            console.log('❌ No user ID - unauthorized');
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         // Check if user already has a PIN
+        console.log('📡 Checking for existing PIN in database...');
         const { data: existingPin, error: fetchError } = await supabase
             .from('user_pins')
             .select('pin, username')
             .eq('clerk_user_id', userId)
             .single();
 
+        if (fetchError) {
+            console.log('⚠️ Fetch error:', fetchError);
+            // If error is "not found", that's okay - we'll create a new PIN
+            if (fetchError.code !== 'PGRST116') {
+                console.error('Unexpected error:', fetchError);
+            }
+        }
+
         if (existingPin) {
+            console.log('✅ Found existing PIN:', existingPin.pin);
             return NextResponse.json({ pin: existingPin.pin, username: existingPin.username });
         }
+
+        console.log('🆕 No existing PIN, generating new one...');
 
         // Generate a new unique PIN
         let pin = generateUniquePin();

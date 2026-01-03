@@ -1,0 +1,37 @@
+
+> porthub@0.1.0 build
+> next build
+
+ΓÜá Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\admin\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\admin\Downloads\porthub-walkie-talkie\porthub\package-lock.json
+
+Γû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env.local
+
+ΓÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 7.9s
+  Running TypeScript ...
+Failed to compile.
+
+.next/dev/types/validator.ts:108:31
+Type error: Type 'typeof import("C:/Users/admin/Downloads/porthub-walkie-talkie/porthub/app/api/friend-request/[id]/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/friend-request/[id]">'.
+  Types of property 'POST' are incompatible.
+    Type '(request: Request, { params }: { params: { id: string; }; }) => Promise<NextResponse<{ error: string; }> | NextResponse<{ success: boolean; message: string; }>>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ id: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters '__1' and 'context' are incompatible.
+        Type '{ params: Promise<{ id: string; }>; }' is not assignable to type '{ params: { id: string; }; }'.
+          Types of property 'params' are incompatible.
+            Property 'id' is missing in type 'Promise<{ id: string; }>' but required in type '{ id: string; }'.
+
+  106 |   type __IsExpected<Specific extends RouteHandlerConfig<"/api/friend-request/[id]">> = Specific
+  107 |   const handler = {} as typeof import("../../../app/api/friend-request/[id]/route.js")
+> 108 |   type __Check = __IsExpected<typeof handler>
+      |                               ^
+  109 |   // @ts-ignore
+  110 |   type __Unused = __Check
+  111 | }
+Next.js build worker exited with code: 1 and signal: null
