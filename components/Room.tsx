@@ -253,7 +253,7 @@ export function Room() {
                         <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-3">Requests</h3>
                         {friendRequests.received.map((req: any) => (
                             <div key={req.id} className="bg-zinc-900 rounded-2xl p-4 flex justify-between mb-2">
-                                <span className="text-white font-bold">{req.sender?.username}</span>
+                                <span className="text-white font-bold">{req.sender?.username || 'Unknown User'}</span>
                                 <div className="flex gap-2">
                                     <button onClick={() => handleFriendAction(req.id, 'accept')} className="text-green-500 font-bold">✓</button>
                                     <button onClick={() => handleFriendAction(req.id, 'reject')} className="text-red-500 font-bold">✕</button>
@@ -276,10 +276,10 @@ export function Room() {
                                 className={`w-full rounded-2xl p-4 flex items-center gap-3 transition-all ${showSpeaking ? 'bg-indigo-900/50 border-2 border-indigo-500' : 'bg-zinc-900 hover:bg-zinc-800'}`}
                             >
                                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-                                    {friend.username?.charAt(0).toUpperCase()}
+                                    {(friend.username || friend.pin || '?').charAt(0).toUpperCase()}
                                 </div>
                                 <div className="flex-1 text-left">
-                                    <p className="text-white font-bold">{friend.username}</p>
+                                    <p className="text-white font-bold">{friend.username || `User ${friend.pin}` || 'Unnamed Friend'}</p>
                                     {showSpeaking && <p className="text-indigo-400 text-xs font-bold animate-pulse">Speaking...</p>}
                                 </div>
                                 <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-green-500' : 'bg-zinc-700'}`}></div>
