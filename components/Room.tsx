@@ -329,10 +329,10 @@ export function Room() {
             <div className="flex-1 flex flex-col p-6 pt-12 z-10">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-8">
-                    <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center">
-                        <span className="font-bold text-xs text-zinc-500">v1.2</span>
+                    <div className="bg-zinc-900/80 backdrop-blur rounded-2xl px-4 py-2 border border-zinc-800">
+                        <span className="text-zinc-500 text-[10px] font-bold tracking-widest uppercase block mb-0.5">MY PIN</span>
+                        <span className="text-white font-black text-lg tracking-wider font-mono select-all">{userPin || '...'}</span>
                     </div>
-                    <h1 className="text-white font-black text-3xl tracking-tighter italic">PORTHUB</h1>
                     <button onClick={() => setView('SETTINGS')} className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center text-white hover:bg-zinc-800 transition-colors">
                         <Settings className="w-6 h-6" />
                     </button>
