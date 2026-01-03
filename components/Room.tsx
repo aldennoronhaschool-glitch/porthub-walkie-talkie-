@@ -37,6 +37,13 @@ export function Room() {
     const [friends, setFriends] = useState<any[]>([]);
     const [friendRequests, setFriendRequests] = useState<{ received: any[], sent: any[] }>({ received: [], sent: [] });
     const [loadingFriends, setLoadingFriends] = useState(false);
+    const [addFriendPin, setAddFriendPin] = useState(""); // Lifted state for Add Friend input
+
+    // ... (rest of code)
+
+    // In AddFriendView (which is defined later in the file)
+    // We will target the AddFriendView definition separately or I can try to match the ViewState definition block if I can see it.
+
 
     // Emoji & Misc
     const [floatingEmojis, setFloatingEmojis] = useState<Array<{ id: number; emoji: string; x: number }>>([]);
@@ -324,7 +331,7 @@ export function Room() {
     // Reuse other views (Settings, Add Friend, etc.) 
     // For brevity in this replacement, I'll include the AddFriendView as it was critical.
     const AddFriendView = () => {
-        const [pin, setPin] = useState("");
+        // Uses lifted state addFriendPin/setAddFriendPin from Room component
         return (
             <div className="flex flex-col h-full bg-black p-6 pt-12">
                 <div className="flex justify-between items-center mb-12">
@@ -336,9 +343,9 @@ export function Room() {
                     <div className="w-full max-w-md bg-zinc-900 rounded-3xl p-6 flex items-center gap-2 border-2 border-zinc-800">
                         <span className="text-zinc-500 text-3xl font-bold">#</span>
                         <input
-                            type="text" autoFocus value={pin}
-                            onChange={(e) => setPin(e.target.value.toUpperCase())}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSendFriendRequest(pin)}
+                            type="text" autoFocus value={addFriendPin}
+                            onChange={(e) => setAddFriendPin(e.target.value.toUpperCase())}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSendFriendRequest(addFriendPin)}
                             className="bg-transparent border-none outline-none text-white text-3xl font-bold w-full uppercase"
                             placeholder="XXXX-XXXX" maxLength={9}
                         />
@@ -349,7 +356,7 @@ export function Room() {
                     </div>
                 </div>
                 <div className="mt-auto pb-8">
-                    <button onClick={() => handleSendFriendRequest(pin)} disabled={!pin.trim() || loadingFriends} className="w-full py-4 rounded-full font-bold text-lg bg-white text-black">
+                    <button onClick={() => handleSendFriendRequest(addFriendPin)} disabled={!addFriendPin.trim() || loadingFriends} className="w-full py-4 rounded-full font-bold text-lg bg-white text-black">
                         {loadingFriends ? 'Sending...' : 'Send Friend Request'}
                     </button>
                 </div>
@@ -362,7 +369,7 @@ export function Room() {
             <AnimatePresence mode="wait">
                 {view === 'DASHBOARD' && <Dashboard />}
                 {view === 'CALL' && <CallView />}
-                {view === 'ADD_FRIEND' && <AddFriendView />}
+                {view === 'ADD_FRIEND' && AddFriendView()}
                 {view === 'SETTINGS' && <SettingsView />}
                 {view === 'EDIT_PROFILE' && <EditProfileView />}
             </AnimatePresence>
