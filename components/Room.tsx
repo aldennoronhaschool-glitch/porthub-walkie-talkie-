@@ -12,6 +12,55 @@ import { supabase } from "@/lib/supabase";
 
 type ViewState = 'DASHBOARD' | 'SETTINGS' | 'ADD_FRIEND' | 'CALL' | 'EDIT_PROFILE';
 
+// --- Extracted Components ---
+
+const AddFriendView = ({
+    setView,
+    pin,
+    setPin,
+    onSend,
+    loading,
+    userPin
+}: {
+    setView: any,
+    pin: string,
+    setPin: any,
+    onSend: any,
+    loading: boolean,
+    userPin: string
+}) => {
+    return (
+        <div key="add-friend-view" className="flex flex-col h-full bg-black p-6 pt-12">
+            <div className="flex justify-between items-center mb-12">
+                <button onClick={() => setView('DASHBOARD')} className="p-2 bg-zinc-900 rounded-full text-white"><X className="w-6 h-6" /></button>
+                <h2 className="text-white font-black text-xl">add friend</h2>
+                <div className="w-10"></div>
+            </div>
+            <div className="flex-1 flex flex-col items-center justify-center gap-8">
+                <div className="w-full max-w-md bg-zinc-900 rounded-3xl p-6 flex items-center gap-2 border-2 border-zinc-800">
+                    <span className="text-zinc-500 text-3xl font-bold">#</span>
+                    <input
+                        type="text" autoFocus value={pin}
+                        onChange={(e) => setPin(e.target.value.toUpperCase())}
+                        onKeyPress={(e) => e.key === 'Enter' && onSend(pin)}
+                        className="bg-transparent border-none outline-none text-white text-3xl font-bold w-full uppercase"
+                        placeholder="XXXX-XXXX" maxLength={9}
+                    />
+                </div>
+                <div className="text-center">
+                    <p className="text-zinc-600 text-sm mb-2">Your PIN:</p>
+                    <span className="text-white font-mono font-bold text-2xl tracking-wider">{userPin}</span>
+                </div>
+            </div>
+            <div className="mt-auto pb-8">
+                <button onClick={() => onSend(pin)} disabled={!pin.trim() || loading} className="w-full py-4 rounded-full font-bold text-lg bg-white text-black">
+                    {loading ? 'Sending...' : 'Send Friend Request'}
+                </button>
+            </div>
+        </div>
+    );
+};
+
 export function Room() {
     const { user } = useUser();
     const [view, setView] = useState<ViewState>('DASHBOARD');
@@ -28,22 +77,12 @@ export function Room() {
         stopSpeaking
     } = useWebRTC(user?.id, activeFriend?.clerk_user_id);
 
-    // Old hooks commented out
-    // const { isRecording, startRecording, stopRecording, blobToBase64 } = useAudioRecorder();
-    // const { isPlaying, playAudio, currentlyPlayingSender } = useAudioPlayer();
-
     // UI State
     const [userPin, setUserPin] = useState<string>('');
     const [friends, setFriends] = useState<any[]>([]);
     const [friendRequests, setFriendRequests] = useState<{ received: any[], sent: any[] }>({ received: [], sent: [] });
     const [loadingFriends, setLoadingFriends] = useState(false);
     const [addFriendPin, setAddFriendPin] = useState(""); // Lifted state for Add Friend input
-
-    // ... (rest of code)
-
-    // In AddFriendView (which is defined later in the file)
-    // We will target the AddFriendView definition separately or I can try to match the ViewState definition block if I can see it.
-
 
     // Emoji & Misc
     const [floatingEmojis, setFloatingEmojis] = useState<Array<{ id: number; emoji: string; x: number }>>([]);
@@ -93,18 +132,14 @@ export function Room() {
 
                 if (fRes.ok) {
                     const fData = await fRes.json();
-                    console.log("👥 Friends Data:", fData);
+                    // console.log("👥 Friends Data:", fData);
                     setFriends(fData.friends || []);
-                } else {
-                    console.error("❌ Failed to fetch friends");
                 }
 
                 if (rRes.ok) {
                     const rData = await rRes.json();
-                    console.log("📩 Requests Data:", rData);
+                    // console.log("📩 Requests Data:", rData);
                     setFriendRequests(rData);
-                } else {
-                    console.error("❌ Failed to fetch requests");
                 }
             } catch (e) { console.error("❌ Error polling:", e); }
         };
@@ -196,34 +231,23 @@ export function Room() {
         <div className="flex flex-col h-full p-6 pt-12 relative">
             <div className="flex justify-between items-center mb-8">
                 <div className="w-10"></div>
-                <button onClick={() => setView('SETTINGS')} className="p-2 rounded-full bg-zinc-900 text-white hover:bg-zinc-800"><Settings className="w-6 h-6" /></button>
+                <h1 className="text-white font-black text-2xl tracking-wider">CHANNELS</h1>
+                <button onClick={() => setView('SETTINGS')} className="p-2 bg-zinc-900 rounded-full text-white transition-colors hover:bg-zinc-800">
+                    <Settings className="w-6 h-6" />
+                </button>
             </div>
 
-            <div className="flex flex-col items-center mb-10">
-                <div className="w-32 h-32 rounded-full border-4 border-zinc-900 overflow-hidden mb-4 shadow-2xl">
-                    <img src={user?.imageUrl} alt="Profile" className="w-full h-full object-cover" />
-                </div>
-                <h1 className="text-3xl font-black text-white mb-2">{user?.firstName || "User"}</h1>
-                <div className="bg-zinc-800 px-4 py-1.5 rounded-full flex items-center gap-2">
-                    <span className="text-zinc-500 font-bold text-xs tracking-widest uppercase">MY PIN</span>
-                    <span className="text-white font-mono font-bold select-all">{userPin || 'Loading...'}</span>
-                </div>
-            </div>
+            <div className="flex-1 overflow-y-auto pb-24">
+                <button
+                    onClick={() => setView('ADD_FRIEND')}
+                    className="w-full bg-zinc-900/50 border-2 border-dashed border-zinc-800 rounded-2xl p-4 flex items-center gap-3 mb-6 hover:bg-zinc-900 transition-all group"
+                >
+                    <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-700 group-hover:text-white transition-colors">
+                        <Plus className="w-6 h-6" />
+                    </div>
+                    <span className="text-zinc-500 font-bold group-hover:text-zinc-300 transition-colors">ADD NEW FRIEND</span>
+                </button>
 
-            <div className="flex justify-center gap-6 mb-12">
-                <div className="flex flex-col items-center gap-2">
-                    <button onClick={() => setIsSilentMode(!isSilentMode)} className={`w-20 h-20 rounded-[2.5rem] flex items-center justify-center transition-all ${isSilentMode ? 'bg-white text-black' : 'bg-zinc-900 text-zinc-500'}`}>
-                        {isSilentMode ? <div className="w-8 h-8 rounded-full bg-black"></div> : <Smile className="w-8 h-8" />}
-                    </button>
-                    <span className="text-zinc-600 text-xs font-bold">silent mode</span>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                    <button onClick={() => setView('ADD_FRIEND')} className="w-20 h-20 rounded-[2.5rem] bg-zinc-900 text-white flex items-center justify-center hover:scale-105 transition-transform"><Plus className="w-8 h-8" /></button>
-                    <span className="text-zinc-600 text-xs font-bold">add friends</span>
-                </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-6 pb-6">
                 {friendRequests.received.length > 0 && (
                     <div className="mb-6">
                         <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-3">Requests</h3>
@@ -328,48 +352,21 @@ export function Room() {
         </div>
     );
 
-    // Reuse other views (Settings, Add Friend, etc.) 
-    // For brevity in this replacement, I'll include the AddFriendView as it was critical.
-    const AddFriendView = () => {
-        // Uses lifted state addFriendPin/setAddFriendPin from Room component
-        return (
-            <div className="flex flex-col h-full bg-black p-6 pt-12">
-                <div className="flex justify-between items-center mb-12">
-                    <button onClick={() => setView('DASHBOARD')} className="p-2 bg-zinc-900 rounded-full text-white"><X className="w-6 h-6" /></button>
-                    <h2 className="text-white font-black text-xl">add friend</h2>
-                    <div className="w-10"></div>
-                </div>
-                <div className="flex-1 flex flex-col items-center justify-center gap-8">
-                    <div className="w-full max-w-md bg-zinc-900 rounded-3xl p-6 flex items-center gap-2 border-2 border-zinc-800">
-                        <span className="text-zinc-500 text-3xl font-bold">#</span>
-                        <input
-                            type="text" autoFocus value={addFriendPin}
-                            onChange={(e) => setAddFriendPin(e.target.value.toUpperCase())}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSendFriendRequest(addFriendPin)}
-                            className="bg-transparent border-none outline-none text-white text-3xl font-bold w-full uppercase"
-                            placeholder="XXXX-XXXX" maxLength={9}
-                        />
-                    </div>
-                    <div className="text-center">
-                        <p className="text-zinc-600 text-sm mb-2">Your PIN:</p>
-                        <span className="text-white font-mono font-bold text-2xl tracking-wider">{userPin}</span>
-                    </div>
-                </div>
-                <div className="mt-auto pb-8">
-                    <button onClick={() => handleSendFriendRequest(addFriendPin)} disabled={!addFriendPin.trim() || loadingFriends} className="w-full py-4 rounded-full font-bold text-lg bg-white text-black">
-                        {loadingFriends ? 'Sending...' : 'Send Friend Request'}
-                    </button>
-                </div>
-            </div>
-        );
-    };
-
     return (
         <div className="h-full w-full bg-black text-white relative">
             <AnimatePresence mode="wait">
                 {view === 'DASHBOARD' && <Dashboard />}
                 {view === 'CALL' && <CallView />}
-                {view === 'ADD_FRIEND' && AddFriendView()}
+                {view === 'ADD_FRIEND' && (
+                    <AddFriendView
+                        setView={setView}
+                        pin={addFriendPin}
+                        setPin={setAddFriendPin}
+                        onSend={handleSendFriendRequest}
+                        loading={loadingFriends}
+                        userPin={userPin}
+                    />
+                )}
                 {view === 'SETTINGS' && <SettingsView />}
                 {view === 'EDIT_PROFILE' && <EditProfileView />}
             </AnimatePresence>
