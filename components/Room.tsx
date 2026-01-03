@@ -519,7 +519,10 @@ export function Room() {
                             onMouseLeave={handleStopTalk}
                             onTouchStart={handleStartTalk}
                             onTouchEnd={handleStopTalk}
-                            className={`relative w-full h-full rounded-full transition-all duration-100 flex items-center justify-center shadow-2xl overflow-hidden
+                            onTouchCancel={handleStopTalk}
+                            onContextMenu={(e) => e.preventDefault()}
+                            style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
+                            className={`relative w-full h-full rounded-full transition-all duration-100 flex items-center justify-center shadow-2xl overflow-hidden select-none
                                 ${isSpeaking
                                     ? 'bg-indigo-600 scale-95 border-8 border-indigo-400/50 ring-4 ring-indigo-500/30'
                                     : 'bg-zinc-800 hover:bg-zinc-700 border-8 border-zinc-700 ring-4 ring-black/40'}
