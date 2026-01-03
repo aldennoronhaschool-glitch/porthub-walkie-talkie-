@@ -430,7 +430,7 @@ export function Room() {
                 )}
 
                 {/* 2. Top Controls */}
-                <div className="relative z-10 p-6 pt-12 flex justify-between items-start">
+                <div className="relative z-50 p-6 pt-12 flex justify-between items-start">
                     <button onClick={() => { setActiveFriend(null); setView('DASHBOARD'); }} className="p-3 bg-zinc-900/50 backdrop-blur-md rounded-full text-white hover:bg-zinc-800 transition-all border border-white/10">
                         <ChevronRight className="w-6 h-6 rotate-180" />
                     </button>
