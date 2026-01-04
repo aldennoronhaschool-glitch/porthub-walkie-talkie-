@@ -16,7 +16,7 @@ export default async function Home() {
       <LandingScene />
 
       {/* Overlay Content */}
-      <div className="relative z-10 w-full h-full flex flex-col justify-end items-center pb-20 pointer-events-none">
+      <div className="relative z-10 w-full h-full flex flex-col justify-center items-center pointer-events-none">
 
         {/* Minimalist Overlay (No Card) */}
         <div className="pointer-events-auto flex flex-col items-center gap-8 w-full max-w-sm mx-4 animate-in fade-in zoom-in duration-1000">
