@@ -21,7 +21,7 @@ export default async function Home() {
         {/* Glass Card for Buttons */}
         <div className="pointer-events-auto bg-zinc-900/60 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] flex flex-col items-center gap-6 shadow-2xl max-w-sm w-[90%] mx-4 animate-in slide-in-from-bottom-20 fade-in duration-1000">
           <div className="text-center space-y-1">
-            <h1 className="text-5xl font-black text-white tracking-tighter italic">ten ten</h1>
+            <h1 className="text-5xl font-black text-white tracking-tighter italic">PORTHUB</h1>
             <p className="text-zinc-400 text-sm font-medium tracking-wide uppercase">Walkie Talkie Reimagined</p>
           </div>
 
