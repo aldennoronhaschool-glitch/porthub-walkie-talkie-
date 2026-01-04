@@ -10,6 +10,22 @@ const RTC_CONFIG = {
         { urls: 'stun:stun2.l.google.com:19302' },
         { urls: 'stun:stun3.l.google.com:19302' },
         { urls: 'stun:stun4.l.google.com:19302' },
+        // OpenRelay Project (Free TURN) - Fixes Firewall blocks
+        {
+            urls: "turn:openrelay.metered.ca:80",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+        },
+        {
+            urls: "turn:openrelay.metered.ca:443",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+        },
+        {
+            urls: "turn:openrelay.metered.ca:443?transport=tcp",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+        }
     ],
     iceCandidatePoolSize: 0,
 };
@@ -19,10 +35,10 @@ export const useWebRTC = (userId: string | undefined, activeFriendId: string | u
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const [isSpeaking, setIsSpeaking] = useState(false); // Am I speaking?
     const [isRemoteSpeaking, setIsRemoteSpeaking] = useState(false); // Is friend speaking?
+    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
 
     const peerConnection = useRef<RTCPeerConnection | null>(null);
     const signalingChannel = useRef<RealtimeChannel | null>(null);
-    const localStream = useRef<MediaStream | null>(null);
     const remoteAudioRef = useRef<HTMLAudioElement | null>(null); // Helper to auto-play
 
     // Initialize Local Audio Stream (Mic)
@@ -32,26 +48,29 @@ export const useWebRTC = (userId: string | undefined, activeFriendId: string | u
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 // Start Muted (mic track disabled)
                 stream.getAudioTracks().forEach(track => track.enabled = false);
-                localStream.current = stream;
+                setLocalStream(stream);
             } catch (err) {
                 console.error("Failed to access microphone:", err);
             }
         };
         initMic();
 
-        // Setup hidden audio element for playback
-        remoteAudioRef.current = new Audio();
-        remoteAudioRef.current.autoplay = true;
-
         return () => {
-            localStream.current?.getTracks().forEach(t => t.stop());
+            localStream?.getTracks().forEach(t => t.stop());
         };
     }, []);
 
     // Effect: Handle Connection when Active Friend Changes
+    // Effect: Handle Connection when Active Friend Changes
     useEffect(() => {
         if (!userId || !activeFriendId) {
             cleanupConnection();
+            return;
+        }
+
+        // Wait for Mic
+        if (!localStream) {
+            console.log("Waiting for microphone...");
             return;
         }
 
@@ -64,7 +83,7 @@ export const useWebRTC = (userId: string | undefined, activeFriendId: string | u
         return () => {
             cleanupConnection();
         };
-    }, [userId, activeFriendId]);
+    }, [userId, activeFriendId, localStream]);
 
     // Cleanup function
     const cleanupConnection = () => {
@@ -121,9 +140,10 @@ export const useWebRTC = (userId: string | undefined, activeFriendId: string | u
         peerConnection.current = pc;
 
         // Add local tracks (muted)
-        if (localStream.current) {
-            localStream.current.getTracks().forEach(track => {
-                pc.addTrack(track, localStream.current!);
+        // Add local tracks
+        if (localStream) {
+            localStream.getTracks().forEach(track => {
+                pc.addTrack(track, localStream);
             });
         }
 
@@ -202,10 +222,10 @@ export const useWebRTC = (userId: string | undefined, activeFriendId: string | u
     // --- Interaction ---
 
     const startSpeaking = useCallback(() => {
-        if (!localStream.current) return;
+        if (!localStream) return;
         setIsSpeaking(true);
         // Unmute audio track
-        localStream.current.getAudioTracks().forEach(t => t.enabled = true);
+        localStream.getAudioTracks().forEach(t => t.enabled = true);
 
         // Notify peer for visual feedback
         signalingChannel.current?.send({
@@ -213,13 +233,13 @@ export const useWebRTC = (userId: string | undefined, activeFriendId: string | u
             event: 'speaking-status',
             payload: { isSpeaking: true, userId }
         });
-    }, [userId]);
+    }, [userId, localStream]);
 
     const stopSpeaking = useCallback(() => {
-        if (!localStream.current) return;
+        if (!localStream) return;
         setIsSpeaking(false);
         // Mute audio track
-        localStream.current.getAudioTracks().forEach(t => t.enabled = false);
+        localStream.getAudioTracks().forEach(t => t.enabled = false);
 
         // Notify peer
         signalingChannel.current?.send({
@@ -227,13 +247,14 @@ export const useWebRTC = (userId: string | undefined, activeFriendId: string | u
             event: 'speaking-status',
             payload: { isSpeaking: false, userId }
         });
-    }, [userId]);
+    }, [userId, localStream]);
 
     return {
         connectionStatus,
         isSpeaking,
         isRemoteSpeaking,
         startSpeaking,
-        stopSpeaking
+        stopSpeaking,
+        remoteAudioRef
     };
 };

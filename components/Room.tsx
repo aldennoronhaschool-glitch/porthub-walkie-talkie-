@@ -161,7 +161,8 @@ export function Room() {
         isSpeaking,
         isRemoteSpeaking,
         startSpeaking,
-        stopSpeaking
+        stopSpeaking,
+        remoteAudioRef
     } = useWebRTC(user?.id, activeFriend?.clerk_user_id);
 
     // UI State
@@ -614,6 +615,7 @@ export function Room() {
                         />
                     )}
                 </AnimatePresence>
+                <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
             </div>
         </div>
     );
