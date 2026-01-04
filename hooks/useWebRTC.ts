@@ -37,7 +37,8 @@ export const useWebRTC = (userId: string | undefined, activeFriendId: string | u
 
     const peerConnection = useRef<RTCPeerConnection | null>(null);
     const signalingChannel = useRef<RealtimeChannel | null>(null);
-    const remoteAudioRef = useRef<HTMLAudioElement | null>(null); // Helper to auto-play
+    const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+    const candidateQueue = useRef<RTCIceCandidate[]>([]); // Queue for early candidates // Helper to auto-play
 
     // Initialize Local Audio Stream (Mic)
     useEffect(() => {
@@ -207,6 +208,13 @@ export const useWebRTC = (userId: string | undefined, activeFriendId: string | u
             } else if (type === 'offer') {
                 console.log("📩 Received Offer");
                 await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
+                // Process queued candidates
+                while (candidateQueue.current.length > 0) {
+                    console.log("Processing queued candidate");
+                    await pc.addIceCandidate(candidateQueue.current.shift()!);
+                }
+
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
                 signalingChannel.current?.send({
@@ -217,9 +225,22 @@ export const useWebRTC = (userId: string | undefined, activeFriendId: string | u
             } else if (type === 'answer') {
                 console.log("📩 Received Answer");
                 await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
+                // Process queued candidates
+                while (candidateQueue.current.length > 0) {
+                    console.log("Processing queued candidate");
+                    await pc.addIceCandidate(candidateQueue.current.shift()!);
+                }
+
             } else if (type === 'candidate') {
                 console.log("🧊 Received ICE Candidate");
-                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                const c = new RTCIceCandidate(candidate);
+                if (pc.remoteDescription) {
+                    await pc.addIceCandidate(c);
+                } else {
+                    console.log("⏳ Queuing candidate (no remote desc)");
+                    candidateQueue.current.push(c);
+                }
             }
         } catch (error) {
             console.error("Signal handling error:", error);
