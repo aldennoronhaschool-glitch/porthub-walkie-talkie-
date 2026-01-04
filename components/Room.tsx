@@ -3,7 +3,7 @@
 import { Mic, MicOff, Radio, Plus, Settings, UserPlus, X, Search, ChevronRight, Moon, Globe, Lock, Unlock, MessageSquare, Bell, Volume2, Shield, LogOut, Users, Smile, Send } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { requestNotificationPermission, notifyUserJoined, notifyUserLeft } from "@/lib/notifications";
 import { setupBackgroundAudio, cleanupBackgroundAudio } from "@/lib/wakeLock";
 import { useWebRTC } from "@/hooks/useWebRTC";
@@ -636,7 +636,7 @@ export function Room() {
                 <div className="space-y-2">
                     <SettingsItem icon={<MessageSquare />} label="edit profile" onClick={() => setView('EDIT_PROFILE')} />
                     <SettingsItem icon={<Shield />} label="legal stuff" />
-                    <SettingsItem icon={<LogOut />} label="sign out" onClick={() => window.location.reload()} />
+                    <SettingsItem icon={<LogOut />} label="sign out" onClick={() => useClerk().signOut({ redirectUrl: '/' })} />
                 </div>
 
                 <div className="mt-8 space-y-6">
