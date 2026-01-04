@@ -196,6 +196,15 @@ export const useWebRTC = (userId: string | undefined, activeFriendId: string | u
                         event: 'signal',
                         payload: { type: 'offer', sdp: offer, userId }
                     });
+                } else {
+                    console.log("👋 I am the receiver. Responding to 'ready' to trigger Initiator.");
+                    // Resend 'ready' so the Initiator knows we are here and creates an offer
+                    // This fixes the deadlock if Initiator joins LAST.
+                    signalingChannel.current?.send({
+                        type: 'broadcast',
+                        event: 'signal',
+                        payload: { type: 'ready', userId }
+                    });
                 }
             } else if (type === 'offer') {
                 console.log("📩 Received Offer");
