@@ -24,7 +24,7 @@ export async function GET() {
         console.log('📡 Checking for existing PIN in database...');
         const { data: existingPin, error: fetchError } = await supabase
             .from('user_pins')
-            .select('pin, username, image_url')
+            .select('*')
             .eq('clerk_user_id', userId)
             .single();
 

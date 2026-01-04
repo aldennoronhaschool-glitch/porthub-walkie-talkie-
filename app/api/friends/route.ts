@@ -39,7 +39,7 @@ export async function GET() {
         // Get friend details
         const { data: friendDetails, error: detailsError } = await supabase
             .from('user_pins')
-            .select('clerk_user_id, username, pin, image_url')
+            .select('*')
             .in('clerk_user_id', friendIds);
 
         if (detailsError) {
