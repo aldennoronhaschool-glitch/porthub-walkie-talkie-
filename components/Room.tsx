@@ -173,6 +173,62 @@ export function Room() {
 
     const [friendRequests, setFriendRequests] = useState<{ received: any[], sent: any[] }>({ received: [], sent: [] });
 
+    // Chat State
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [chatMessages, setChatMessages] = useState<any[]>([]);
+    const [newMessage, setNewMessage] = useState("");
+    const chatEndRef = useRef<HTMLDivElement>(null);
+
+    // Scroll chat to bottom
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [chatMessages, isChatOpen]);
+
+    // Chat Subscription
+    useEffect(() => {
+        if (!activeFriend || !user) return;
+
+        const fetchHistory = async () => {
+            const { data } = await supabase.from('messages')
+                .select('*')
+                .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+                .order('created_at', { ascending: true }); // optimize query later if needed
+
+            // Client-side filter for strict pair (since .or query is broad)
+            const conversation = data?.filter((m: any) =>
+                (m.sender_id === user.id && m.receiver_id === activeFriend.clerk_user_id) ||
+                (m.sender_id === activeFriend.clerk_user_id && m.receiver_id === user.id)
+            ) || [];
+            setChatMessages(conversation);
+        };
+        fetchHistory();
+
+        const channel = supabase.channel(`chat_room`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+                const m = payload.new;
+                if (
+                    (m.sender_id === user.id && m.receiver_id === activeFriend.clerk_user_id) ||
+                    (m.sender_id === activeFriend.clerk_user_id && m.receiver_id === user.id)
+                ) {
+                    setChatMessages(prev => [...prev, m]);
+                }
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [activeFriend, user]);
+
+    const handleSendMessage = async () => {
+        if (!newMessage.trim() || !user || !activeFriend) return;
+        // Optimistic UI? No, let Realtime handle it.
+        const { error } = await supabase.from('messages').insert({
+            sender_id: user.id,
+            receiver_id: activeFriend.clerk_user_id,
+            content: newMessage.trim()
+        });
+        if (!error) setNewMessage("");
+    };
+
     // Auto-Answer / Global Call Signaling
     const sendCallSignal = async (targetId: string) => {
         const channel = supabase.channel('global-calls');
@@ -586,6 +642,76 @@ export function Room() {
                         </button>
                     </div>
                 </div>
+
+                {/* Chat Button (Bottom Left Floating) */}
+                <button
+                    onClick={() => setIsChatOpen(true)}
+                    className="absolute bottom-8 left-8 z-30 w-14 h-14 bg-zinc-800/80 backdrop-blur rounded-full flex items-center justify-center text-white border border-white/10 shadow-xl hover:bg-zinc-700 transition-all"
+                >
+                    <MessageSquare className="w-6 h-6" />
+                </button>
+
+                {/* Chat Overlay */}
+                <AnimatePresence>
+                    {isChatOpen && (
+                        <motion.div
+                            initial={{ y: "100%" }}
+                            animate={{ y: 0 }}
+                            exit={{ y: "100%" }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            className="absolute inset-0 z-40 bg-black/90 backdrop-blur-xl flex flex-col"
+                        >
+                            {/* Header */}
+                            <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/50">
+                                <h3 className="font-bold text-white flex items-center gap-2">
+                                    <MessageSquare className="w-4 h-4 text-indigo-400" />
+                                    {activeFriend?.username}
+                                </h3>
+                                <button onClick={() => setIsChatOpen(false)} className="p-2 bg-zinc-800 rounded-full text-white">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {/* Messages */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                {chatMessages.map((msg) => {
+                                    const isMe = msg.sender_id === user?.id;
+                                    return (
+                                        <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm font-medium ${isMe ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-zinc-800 text-zinc-200 rounded-bl-none'}`}>
+                                                {msg.content}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                <div ref={chatEndRef} />
+                            </div>
+
+                            {/* Input */}
+                            <div className="p-4 border-t border-white/10 bg-black/50">
+                                <form
+                                    onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
+                                    className="flex gap-2"
+                                >
+                                    <input
+                                        type="text"
+                                        value={newMessage}
+                                        onChange={(e) => setNewMessage(e.target.value)}
+                                        placeholder="Type a message..."
+                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded-full px-4 py-3 text-white outline-none focus:border-indigo-500 transition-colors"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={!newMessage.trim()}
+                                        className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:bg-zinc-800"
+                                    >
+                                        <Send className="w-5 h-5" />
+                                    </button>
+                                </form>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         );
     };
