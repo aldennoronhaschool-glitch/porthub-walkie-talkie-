@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, MicOff, Radio, Plus, Settings, UserPlus, X, Search, ChevronRight, Moon, Globe, Lock, Unlock, MessageSquare, Bell, Volume2, Shield, LogOut, Users, Smile, Send } from "lucide-react";
+import { Mic, MicOff, Radio, Plus, Settings, UserPlus, X, Search, ChevronRight, Moon, Globe, Lock, Unlock, MessageSquare, Bell, Volume2, Shield, LogOut, Users, Smile, Send, CheckCheck } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser, useClerk } from "@clerk/nextjs";
@@ -204,19 +204,39 @@ export function Room() {
         fetchHistory();
 
         const channel = supabase.channel(`chat_room`)
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-                const m = payload.new;
-                if (
-                    (m.sender_id === user.id && m.receiver_id === activeFriend.clerk_user_id) ||
-                    (m.sender_id === activeFriend.clerk_user_id && m.receiver_id === user.id)
-                ) {
-                    setChatMessages(prev => [...prev, m]);
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    const m = payload.new;
+                    if (
+                        (m.sender_id === user.id && m.receiver_id === activeFriend.clerk_user_id) ||
+                        (m.sender_id === activeFriend.clerk_user_id && m.receiver_id === user.id)
+                    ) {
+                        setChatMessages(prev => [...prev, m]);
+                    }
+                } else if (payload.eventType === 'UPDATE') {
+                    setChatMessages(prev => prev.map(m => m.id === payload.new.id ? payload.new : m));
                 }
             })
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };
     }, [activeFriend, user]);
+
+    // Mark messages as read when chat is open
+    useEffect(() => {
+        if (isChatOpen && chatMessages.length > 0 && user) {
+            const unreadIds = chatMessages
+                .filter((m: any) => m.receiver_id === user.id && !m.is_read)
+                .map((m: any) => m.id);
+
+            if (unreadIds.length > 0) {
+                // Determine valid UUIDs to avoid errors
+                supabase.from('messages').update({ is_read: true }).in('id', unreadIds).then(({ error }) => {
+                    if (error) console.error("Failed to mark read", error);
+                });
+            }
+        }
+    }, [chatMessages, isChatOpen, user]); // Re-run when messages update or chat opens
 
     const handleSendMessage = async () => {
         if (!newMessage.trim() || !user || !activeFriend) return;
@@ -258,6 +278,7 @@ export function Room() {
                     if (caller) {
                         setActiveFriend(caller);
                         setView('CALL');
+                        setIsChatOpen(false);
                     }
                 }
             })
@@ -507,6 +528,7 @@ export function Room() {
                                     onClick={() => {
                                         setActiveFriend(friend);
                                         setView('CALL');
+                                        setIsChatOpen(false);
                                         sendCallSignal(friend.clerk_user_id);
                                     }}
                                     className={`relative aspect-square rounded-[2rem] p-4 flex flex-col items-center justify-between transition-all overflow-hidden
@@ -545,176 +567,7 @@ export function Room() {
         </div>
     );
 
-    const CallView = () => {
-        // Ten Ten Style Layout
-        const displayImage = activeFriend?.image_url;
 
-        return (
-            <div className="flex-1 flex flex-col h-full bg-black relative overflow-hidden">
-                {/* 1. Full Screen Background Image (Blurred/Darkened) */}
-                {displayImage ? (
-                    <div className="absolute inset-0 z-0">
-                        <img src={displayImage} className="w-full h-full object-cover opacity-60 blur-2xl scale-110" alt="bg" />
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black/90"></div>
-                    </div>
-                ) : (
-                    // Fallback Gradient
-                    <div className="absolute inset-0 z-0 bg-gradient-to-b from-zinc-900 to-black"></div>
-                )}
-
-                {/* 2. Top Controls */}
-                <div className="relative z-50 p-6 pt-12 flex justify-between items-start">
-                    <button onClick={() => { setActiveFriend(null); setView('DASHBOARD'); }} className="p-3 bg-zinc-900/50 backdrop-blur-md rounded-full text-white hover:bg-zinc-800 transition-all border border-white/10">
-                        <ChevronRight className="w-6 h-6 rotate-180" />
-                    </button>
-                    <div className="flex flex-col items-center">
-                        <div className={`px-4 py-1 rounded-full backdrop-blur-md border ${connectionStatus === 'connected' ? 'bg-green-500/20 border-green-500/30 text-green-400' : 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400'} font-bold text-[10px] tracking-widest uppercase mb-2`}>
-                            {connectionStatus === 'connected' ? 'LIVE' : 'CONNECTING...'}
-                        </div>
-                    </div>
-                    <button onClick={toggleHandsFree} className={`p-3 rounded-full backdrop-blur-md transition-all border border-white/10 ${isHandsFree ? 'bg-red-500 text-white border-red-500' : 'bg-zinc-900/50 text-white hover:bg-zinc-800'}`}>
-                        {isHandsFree ? <Unlock className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
-                    </button>
-                </div>
-
-                {/* 3. Center Content (Friend Info) */}
-                <div className="relative z-10 flex-1 flex flex-col items-center justify-center -mt-20">
-                    <div className="relative w-48 h-48 mb-6">
-                        {isRemoteSpeaking && (
-                            <div className="absolute inset-0 rounded-full border-4 border-indigo-500 animate-ping opacity-50"></div>
-                        )}
-                        <div className={`w-full h-full rounded-full overflow-hidden border-4 shadow-2xl ${isRemoteSpeaking ? 'border-indigo-500 shadow-indigo-500/50' : 'border-white/10'}`}>
-                            {displayImage ? (
-                                <img src={displayImage} className="w-full h-full object-cover" alt="friend" />
-                            ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-6xl shadow-inner">
-                                    {(activeFriend?.username || activeFriend?.pin || '?').charAt(0).toUpperCase()}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <h1 className="text-white font-black text-5xl mb-2 text-center drop-shadow-xl tracking-tight">{activeFriend?.username || 'Unknown'}</h1>
-                    <p className={`font-bold tracking-[0.2em] text-xs uppercase ${onlineUsers.has(activeFriend?.clerk_user_id) ? 'text-green-400' : 'text-zinc-500'}`}>
-                        {isRemoteSpeaking
-                            ? 'IS SPEAKING...'
-                            : (onlineUsers.has(activeFriend?.clerk_user_id) ? 'ONLINE' : 'OFFLINE')}
-                    </p>
-                    {connectionStatus !== 'connected' && (
-                        <p className="text-zinc-600 text-[8px] font-bold mt-4 uppercase animate-pulse">
-                            Wait for them to join...
-                        </p>
-                    )}
-                </div>
-
-                {/* 4. Bottom PTT Button (Ten Ten Style) */}
-                <div className="relative z-10 pb-16 flex flex-col items-center justify-end w-full">
-
-                    <div className="relative w-full max-w-[220px] aspect-square touch-none">
-                        {isSpeaking && (
-                            <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-30 delay-75"></div>
-                        )}
-                        {isSpeaking && (
-                            <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-50"></div>
-                        )}
-
-                        {/* Button */}
-                        <button
-                            onMouseDown={handleStartTalk}
-                            onMouseUp={handleStopTalk}
-                            onMouseLeave={handleStopTalk}
-                            onTouchStart={handleStartTalk}
-                            onTouchEnd={handleStopTalk}
-                            onTouchCancel={handleStopTalk}
-                            onContextMenu={(e) => e.preventDefault()}
-                            style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
-                            className={`relative w-full h-full rounded-full transition-all duration-100 flex items-center justify-center shadow-2xl overflow-hidden select-none
-                                ${isSpeaking
-                                    ? 'bg-indigo-600 scale-95 border-8 border-indigo-400/50 ring-4 ring-indigo-500/30'
-                                    : 'bg-zinc-800 hover:bg-zinc-700 border-8 border-zinc-700 ring-4 ring-black/40'}
-                            `}
-                        >
-                            {isSpeaking ? (
-                                <div className="w-24 h-24 bg-white/20 rounded-full animate-pulse blur-xl"></div>
-                            ) : (
-                                <div className="w-full h-full bg-gradient-to-b from-white/5 to-transparent"></div>
-                            )}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Chat Button (Bottom Left Floating) */}
-                <button
-                    onClick={() => setIsChatOpen(true)}
-                    className="absolute bottom-8 left-8 z-30 w-14 h-14 bg-zinc-800/80 backdrop-blur rounded-full flex items-center justify-center text-white border border-white/10 shadow-xl hover:bg-zinc-700 transition-all"
-                >
-                    <MessageSquare className="w-6 h-6" />
-                </button>
-
-                {/* Chat Overlay */}
-                <AnimatePresence>
-                    {isChatOpen && (
-                        <motion.div
-                            initial={{ y: "100%" }}
-                            animate={{ y: 0 }}
-                            exit={{ y: "100%" }}
-                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="absolute inset-0 z-40 bg-black/90 backdrop-blur-xl flex flex-col"
-                        >
-                            {/* Header */}
-                            <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/50">
-                                <h3 className="font-bold text-white flex items-center gap-2">
-                                    <MessageSquare className="w-4 h-4 text-indigo-400" />
-                                    {activeFriend?.username}
-                                </h3>
-                                <button onClick={() => setIsChatOpen(false)} className="p-2 bg-zinc-800 rounded-full text-white">
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-
-                            {/* Messages */}
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                {chatMessages.map((msg) => {
-                                    const isMe = msg.sender_id === user?.id;
-                                    return (
-                                        <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                            <div className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm font-medium ${isMe ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-zinc-800 text-zinc-200 rounded-bl-none'}`}>
-                                                {msg.content}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                                <div ref={chatEndRef} />
-                            </div>
-
-                            {/* Input */}
-                            <div className="p-4 border-t border-white/10 bg-black/50">
-                                <form
-                                    onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
-                                    className="flex gap-2"
-                                >
-                                    <input
-                                        type="text"
-                                        value={newMessage}
-                                        onChange={(e) => setNewMessage(e.target.value)}
-                                        placeholder="Type a message..."
-                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded-full px-4 py-3 text-white outline-none focus:border-indigo-500 transition-colors"
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={!newMessage.trim()}
-                                        className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:bg-zinc-800"
-                                    >
-                                        <Send className="w-5 h-5" />
-                                    </button>
-                                </form>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
-        );
-    };
 
     return (
         <div className="h-full w-full bg-zinc-950 flex items-center justify-center">
@@ -722,7 +575,178 @@ export function Room() {
             <div className="w-full max-w-md h-full bg-black text-white relative shadow-2xl overflow-hidden border-x border-zinc-800">
                 <AnimatePresence mode="wait">
                     {view === 'DASHBOARD' && <Dashboard />}
-                    {view === 'CALL' && <CallView />}
+                    {view === 'CALL' && (
+                        <div className="flex-1 flex flex-col h-full bg-black relative overflow-hidden">
+                            {/* 1. Full Screen Background Image (Blurred/Darkened) */}
+                            {activeFriend?.image_url ? (
+                                <div className="absolute inset-0 z-0">
+                                    <img src={activeFriend.image_url} className="w-full h-full object-cover opacity-60 blur-2xl scale-110" alt="bg" />
+                                    <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black/90"></div>
+                                </div>
+                            ) : (
+                                <div className="absolute inset-0 z-0 bg-gradient-to-b from-zinc-900 to-black"></div>
+                            )}
+
+                            {/* 2. Top Controls */}
+                            <div className="relative z-50 p-6 pt-12 flex justify-between items-start">
+                                <button onClick={() => { setActiveFriend(null); setView('DASHBOARD'); setIsChatOpen(false); }} className="p-3 bg-zinc-900/50 backdrop-blur-md rounded-full text-white hover:bg-zinc-800 transition-all border border-white/10">
+                                    <ChevronRight className="w-6 h-6 rotate-180" />
+                                </button>
+                                <div className="flex flex-col items-center">
+                                    <div className={`px-4 py-1 rounded-full backdrop-blur-md border ${connectionStatus === 'connected' ? 'bg-green-500/20 border-green-500/30 text-green-400' : 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400'} font-bold text-[10px] tracking-widest uppercase mb-2`}>
+                                        {connectionStatus === 'connected' ? 'LIVE' : 'CONNECTING...'}
+                                    </div>
+                                </div>
+                                <button onClick={toggleHandsFree} className={`p-3 rounded-full backdrop-blur-md transition-all border border-white/10 ${isHandsFree ? 'bg-red-500 text-white border-red-500' : 'bg-zinc-900/50 text-white hover:bg-zinc-800'}`}>
+                                    {isHandsFree ? <Unlock className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
+                                </button>
+                            </div>
+
+                            {/* 3. Center Content (Friend Info) */}
+                            <div className="relative z-10 flex-1 flex flex-col items-center justify-center -mt-20">
+                                <div className="relative w-48 h-48 mb-6">
+                                    {isRemoteSpeaking && (
+                                        <div className="absolute inset-0 rounded-full border-4 border-indigo-500 animate-ping opacity-50"></div>
+                                    )}
+                                    <div className={`w-full h-full rounded-full overflow-hidden border-4 shadow-2xl ${isRemoteSpeaking ? 'border-indigo-500 shadow-indigo-500/50' : 'border-white/10'}`}>
+                                        {activeFriend?.image_url ? (
+                                            <img src={activeFriend.image_url} className="w-full h-full object-cover" alt="friend" />
+                                        ) : (
+                                            <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-6xl shadow-inner">
+                                                {(activeFriend?.username || activeFriend?.pin || '?').charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <h1 className="text-white font-black text-5xl mb-2 text-center drop-shadow-xl tracking-tight">{activeFriend?.username || 'Unknown'}</h1>
+                                <p className={`font-bold tracking-[0.2em] text-xs uppercase ${onlineUsers.has(activeFriend?.clerk_user_id) ? 'text-green-400' : 'text-zinc-500'}`}>
+                                    {isRemoteSpeaking
+                                        ? 'IS SPEAKING...'
+                                        : (onlineUsers.has(activeFriend?.clerk_user_id) ? 'ONLINE' : 'OFFLINE')}
+                                </p>
+                                {connectionStatus !== 'connected' && (
+                                    <p className="text-zinc-600 text-[8px] font-bold mt-4 uppercase animate-pulse">
+                                        Wait for them to join...
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* 4. Bottom PTT Button (Ten Ten Style) */}
+                            <div className="relative z-10 pb-16 flex flex-col items-center justify-end w-full">
+
+                                <div className="relative w-full max-w-[220px] aspect-square touch-none">
+                                    {isSpeaking && (
+                                        <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-30 delay-75"></div>
+                                    )}
+                                    {isSpeaking && (
+                                        <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-50"></div>
+                                    )}
+
+                                    {/* Button */}
+                                    <button
+                                        onMouseDown={handleStartTalk}
+                                        onMouseUp={handleStopTalk}
+                                        onMouseLeave={handleStopTalk}
+                                        onTouchStart={handleStartTalk}
+                                        onTouchEnd={handleStopTalk}
+                                        onTouchCancel={handleStopTalk}
+                                        onContextMenu={(e) => e.preventDefault()}
+                                        style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
+                                        className={`relative w-full h-full rounded-full transition-all duration-100 flex items-center justify-center shadow-2xl overflow-hidden select-none
+                                            ${isSpeaking
+                                                ? 'bg-indigo-600 scale-95 border-8 border-indigo-400/50 ring-4 ring-indigo-500/30'
+                                                : 'bg-zinc-800 hover:bg-zinc-700 border-8 border-zinc-700 ring-4 ring-black/40'}
+                                        `}
+                                    >
+                                        {isSpeaking ? (
+                                            <div className="w-24 h-24 bg-white/20 rounded-full animate-pulse blur-xl"></div>
+                                        ) : (
+                                            <div className="w-full h-full bg-gradient-to-b from-white/5 to-transparent"></div>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Chat Button (Bottom Left Floating) */}
+                            <button
+                                onClick={() => setIsChatOpen(true)}
+                                className="absolute bottom-8 left-8 z-30 w-14 h-14 bg-zinc-800/80 backdrop-blur rounded-full flex items-center justify-center text-white border border-white/10 shadow-xl hover:bg-zinc-700 transition-all"
+                            >
+                                <MessageSquare className="w-6 h-6" />
+                            </button>
+
+                            {/* Chat Overlay */}
+                            <AnimatePresence>
+                                {isChatOpen && (
+                                    <motion.div
+                                        initial={{ y: "100%" }}
+                                        animate={{ y: 0 }}
+                                        exit={{ y: "100%" }}
+                                        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                                        className="absolute inset-0 z-40 bg-black/90 backdrop-blur-xl flex flex-col"
+                                    >
+                                        {/* Header */}
+                                        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/50">
+                                            <h3 className="font-bold text-white flex items-center gap-2">
+                                                <MessageSquare className="w-4 h-4 text-indigo-400" />
+                                                {activeFriend?.username}
+                                            </h3>
+                                            <button onClick={() => setIsChatOpen(false)} className="p-2 bg-zinc-800 rounded-full text-white">
+                                                <X className="w-5 h-5" />
+                                            </button>
+                                        </div>
+
+                                        {/* Messages */}
+                                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                            {chatMessages.map((msg) => {
+                                                const isMe = msg.sender_id === user?.id;
+                                                return (
+                                                    <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                                        <div className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm font-medium ${isMe ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-zinc-800 text-zinc-200 rounded-bl-none'}`}>
+                                                            {msg.content}
+                                                        </div>
+                                                        {isMe && (
+                                                            <div className="flex items-center gap-1 mt-1 mr-1">
+                                                                <span className="text-[10px] text-zinc-500">
+                                                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                                <CheckCheck className={`w-3 h-3 ${msg.is_read ? 'text-blue-400' : 'text-zinc-500'}`} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                            <div ref={chatEndRef} />
+                                        </div>
+
+                                        {/* Input */}
+                                        <div className="p-4 border-t border-white/10 bg-black/50">
+                                            <form
+                                                onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
+                                                className="flex gap-2"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    value={newMessage}
+                                                    onChange={(e) => setNewMessage(e.target.value)}
+                                                    placeholder="Type a message..."
+                                                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded-full px-4 py-3 text-white outline-none focus:border-indigo-500 transition-colors"
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    disabled={!newMessage.trim()}
+                                                    className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:bg-zinc-800"
+                                                >
+                                                    <Send className="w-5 h-5" />
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    )}
                     {view === 'ADD_FRIEND' && (
                         <AddFriendView
                             setView={setView}
