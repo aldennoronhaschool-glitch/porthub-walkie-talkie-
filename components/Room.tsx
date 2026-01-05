@@ -570,8 +570,8 @@ export function Room() {
                 )}
 
                 {/* Main Grid */}
-                <div className="flex-1 overflow-y-auto">
-                    <div className="grid grid-cols-2 gap-4 pb-24">
+                <div className="flex-1 overflow-y-auto overscroll-y-contain">
+                    <div className="grid grid-cols-2 gap-4 pb-32">
                         {/* Add Friend Card */}
                         <button
                             onClick={() => setView('ADD_FRIEND')}
@@ -765,7 +765,7 @@ export function Room() {
                                         </div>
 
                                         {/* Messages */}
-                                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                        <div className="flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain pb-safe">
                                             {chatMessages.map((msg) => {
                                                 const isMe = msg.sender_id === user?.id;
                                                 const isImage = msg.type === 'image';

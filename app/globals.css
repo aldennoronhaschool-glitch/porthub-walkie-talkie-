@@ -16,9 +16,20 @@
   --foreground: #ededed;
 }
 
+html,
+body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  /* Prevent body scroll to stop URL bar hiding */
+  overscroll-behavior: none;
+  /* Prevent pull-to-refresh effects */
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
-
+  position: Fixed;
+  /* Strongest lock for mobile */
 }
