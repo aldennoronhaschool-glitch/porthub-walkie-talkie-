@@ -332,13 +332,16 @@ export function Room() {
 
         const syncProfile = async () => {
             // Auto-sync publicly visible name & image to Supabase
-            if (user.firstName) {
+            // Use fullName > firstName > username > 'Anonymous'
+            const displayName = user.fullName || user.firstName || user.username || 'Anonymous';
+
+            if (displayName) {
                 try {
                     await fetch('/api/user-pin', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            username: user.firstName,
+                            username: displayName,
                             image_url: user.imageUrl
                         })
                     });
