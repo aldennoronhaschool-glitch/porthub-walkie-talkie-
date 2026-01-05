@@ -670,8 +670,8 @@ export function Room() {
                             </div>
 
                             {/* 3. Center Content (Friend Info) */}
-                            <div className="relative z-10 flex-1 flex flex-col items-center justify-center -mt-20">
-                                <div className="relative w-48 h-48 mb-6">
+                            <div className="relative z-10 flex-1 flex flex-col items-center justify-center -mt-10">
+                                <div className="relative w-[35vw] h-[35vw] max-w-[200px] max-h-[200px] mb-6">
                                     {isRemoteSpeaking && (
                                         <div className="absolute inset-0 rounded-full border-4 border-indigo-500 animate-ping opacity-50"></div>
                                     )}
@@ -686,7 +686,7 @@ export function Room() {
                                     </div>
                                 </div>
 
-                                <h1 className="text-white font-black text-5xl mb-2 text-center drop-shadow-xl tracking-tight">{activeFriend?.username || 'Unknown'}</h1>
+                                <h1 className="text-white font-black text-4xl mb-2 text-center drop-shadow-xl tracking-tight max-w-[80vw] truncate">{activeFriend?.username || 'Unknown'}</h1>
                                 <p className={`font-bold tracking-[0.2em] text-xs uppercase ${onlineUsers.has(activeFriend?.clerk_user_id) ? 'text-green-400' : 'text-zinc-500'}`}>
                                     {isRemoteSpeaking
                                         ? 'IS SPEAKING...'
@@ -700,9 +700,9 @@ export function Room() {
                             </div>
 
                             {/* 4. Bottom PTT Button (Ten Ten Style) */}
-                            <div className="relative z-10 pb-16 flex flex-col items-center justify-end w-full">
+                            <div className="relative z-10 pb-4 flex flex-col items-center justify-end w-full">
 
-                                <div className="relative w-full max-w-[220px] aspect-square touch-none">
+                                <div className="relative w-[50vw] max-w-[200px] aspect-square touch-none">
                                     {isSpeaking && (
                                         <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-30 delay-75"></div>
                                     )}
