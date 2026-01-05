@@ -350,8 +350,7 @@ export function Room() {
             .subscribe();
         return () => { supabase.removeChannel(channel); };
     }, [user]);
-    const [loadingFriends, setLoadingFriends] = useState(false);
-    const [addFriendPin, setAddFriendPin] = useState("");
+
 
     // Presence State
     const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
@@ -752,7 +751,7 @@ export function Room() {
                                         animate={{ y: 0 }}
                                         exit={{ y: "100%" }}
                                         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                                        className="absolute inset-0 z-40 bg-black/90 backdrop-blur-xl flex flex-col"
+                                        className="fixed inset-0 z-50 bg-black flex flex-col overscroll-none"
                                     >
                                         {/* Header */}
                                         <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/50">
