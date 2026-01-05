@@ -309,7 +309,7 @@ export function Room() {
 
     const openImage = (msg: any) => {
         setViewingImage(msg);
-        if (msg.is_view_once && msg.receiver_id === user.id && !msg.is_viewed) {
+        if (msg.is_view_once && user && msg.receiver_id === user.id && !msg.is_viewed) {
             supabase.from('messages').update({ is_viewed: true }).eq('id', msg.id).then();
         }
     };
