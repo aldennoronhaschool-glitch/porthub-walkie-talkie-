@@ -224,6 +224,10 @@ export const useWebRTC = (userId: string | undefined, activeFriendId: string | u
                 });
             } else if (type === 'answer') {
                 console.log("📩 Received Answer");
+                if (pc.signalingState === 'stable') {
+                    console.warn("⚠️ Received Answer in Stable state. Ignoring.");
+                    return;
+                }
                 await pc.setRemoteDescription(new RTCSessionDescription(sdp));
 
                 // Process queued candidates
