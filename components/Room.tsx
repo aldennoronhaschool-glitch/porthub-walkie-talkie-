@@ -751,10 +751,10 @@ export function Room() {
                                         animate={{ y: 0 }}
                                         exit={{ y: "100%" }}
                                         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                                        className="fixed inset-0 z-50 bg-black flex flex-col overscroll-none"
+                                        className="fixed inset-0 z-[100] bg-black flex flex-col overscroll-none"
                                     >
                                         {/* Header */}
-                                        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/50">
+                                        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-zinc-900 shadow-md">
                                             <h3 className="font-bold text-white flex items-center gap-2">
                                                 <MessageSquare className="w-4 h-4 text-indigo-400" />
                                                 {activeFriend?.username}
