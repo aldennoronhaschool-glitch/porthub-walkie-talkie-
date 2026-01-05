@@ -254,16 +254,29 @@ export function Room() {
 
         if (imageFile) {
             type = 'image';
-            const filename = `${user.id}/${Date.now()}-${imageFile.name}`;
-            const { data, error } = await supabase.storage.from('chat-images').upload(filename, imageFile);
 
-            if (error) {
+            // Upload to ImageKit via our API route
+            try {
+                const formData = new FormData();
+                formData.append('file', imageFile);
+
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Upload failed');
+                }
+
+                const data = await res.json();
+                mediaUrl = data.url;
+            } catch (error) {
                 console.error("Upload failed", error);
+                // Ideally show toast error
                 return;
             }
-
-            const { data: publicData } = supabase.storage.from('chat-images').getPublicUrl(filename);
-            mediaUrl = publicData.publicUrl;
         }
 
         const msg = {
