@@ -28,31 +28,201 @@ const AddFriendView = ({
     loading: boolean,
     userPin: string
 }) => {
+    const [mode, setMode] = useState<'input' | 'scan' | 'myqr'>('input');
+    const QRCode = require('qrcode.react').QRCodeSVG;
+
+    const handleShare = async () => {
+        const qrCanvas = document.getElementById('my-qr-code');
+        if (!qrCanvas) return;
+
+        try {
+            // Convert SVG to canvas for sharing
+            const svg = qrCanvas.querySelector('svg');
+            if (!svg) return;
+
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+
+            img.onload = async () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx?.drawImage(img, 0, 0);
+
+                canvas.toBlob(async (blob) => {
+                    if (!blob) return;
+
+                    const file = new File([blob], 'qr-code.png', { type: 'image/png' });
+
+                    if (navigator.share && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            title: 'My Friend QR Code',
+                            text: `Add me on PortHub! My PIN: ${userPin}`,
+                            files: [file]
+                        });
+                    } else {
+                        // Fallback: download the image
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'my-qr-code.png';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }
+                });
+            };
+
+            img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+        } catch (error) {
+            console.error('Share failed:', error);
+            alert('Failed to share QR code');
+        }
+    };
+
+    if (mode === 'scan') {
+        const { QRCodeScanner } = require('@/components/QRCodeScanner');
+        return (
+            <QRCodeScanner
+                onScan={(decodedText: string) => {
+                    setPin(decodedText);
+                    setMode('input');
+                    onSend(decodedText);
+                }}
+                onClose={() => setMode('input')}
+            />
+        );
+    }
+
+    if (mode === 'myqr') {
+        return (
+            <div key="my-qr-view" className="flex flex-col h-full bg-black p-6 pt-12">
+                <div className="flex justify-between items-center mb-12">
+                    <button onClick={() => setMode('input')} className="p-2 bg-zinc-900 rounded-full text-white">
+                        <X className="w-6 h-6" />
+                    </button>
+                    <h2 className="text-white font-black text-xl">my qr code</h2>
+                    <div className="w-10"></div>
+                </div>
+
+                <div className="flex-1 flex flex-col items-center justify-center gap-8">
+                    <div id="my-qr-code" className="bg-white p-8 rounded-3xl shadow-2xl">
+                        <QRCode value={userPin} size={256} level="H" />
+                    </div>
+
+                    <div className="text-center">
+                        <p className="text-zinc-500 text-sm mb-2">Your PIN</p>
+                        <span className="text-white font-mono font-bold text-2xl tracking-wider">{userPin}</span>
+                    </div>
+
+                    <p className="text-zinc-600 text-sm text-center max-w-md">
+                        Share this QR code with friends to let them add you instantly
+                    </p>
+                </div>
+
+                <div className="mt-auto pb-8 space-y-3">
+                    <button
+                        onClick={handleShare}
+                        className="w-full py-4 rounded-full font-bold text-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                    >
+                        Share QR Code
+                    </button>
+                    <button
+                        onClick={() => setMode('input')}
+                        className="w-full py-4 rounded-full font-bold text-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-colors"
+                    >
+                        Back
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div key="add-friend-view" className="flex flex-col h-full bg-black p-6 pt-12">
             <div className="flex justify-between items-center mb-12">
-                <button onClick={() => setView('DASHBOARD')} className="p-2 bg-zinc-900 rounded-full text-white"><X className="w-6 h-6" /></button>
+                <button onClick={() => setView('DASHBOARD')} className="p-2 bg-zinc-900 rounded-full text-white">
+                    <X className="w-6 h-6" />
+                </button>
                 <h2 className="text-white font-black text-xl">add friend</h2>
                 <div className="w-10"></div>
             </div>
+
             <div className="flex-1 flex flex-col items-center justify-center gap-8">
-                <div className="w-full max-w-md bg-zinc-900 rounded-3xl p-6 flex items-center gap-2 border-2 border-zinc-800">
-                    <span className="text-zinc-500 text-3xl font-bold">#</span>
-                    <input
-                        type="text" autoFocus value={pin}
-                        onChange={(e) => setPin(e.target.value.toUpperCase())}
-                        onKeyPress={(e) => e.key === 'Enter' && onSend(pin)}
-                        className="bg-transparent border-none outline-none text-white text-3xl font-bold w-full uppercase"
-                        placeholder="XXXX-XXXX" maxLength={9}
-                    />
+                {/* Manual PIN Input */}
+                <div className="w-full max-w-md">
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-3 text-center">
+                        Enter Friend's PIN
+                    </p>
+                    <div className="bg-zinc-900 rounded-3xl p-6 flex items-center gap-2 border-2 border-zinc-800">
+                        <span className="text-zinc-500 text-3xl font-bold">#</span>
+                        <input
+                            type="text"
+                            autoFocus
+                            value={pin}
+                            onChange={(e) => setPin(e.target.value.toUpperCase())}
+                            onKeyPress={(e) => e.key === 'Enter' && onSend(pin)}
+                            className="bg-transparent border-none outline-none text-white text-3xl font-bold w-full uppercase"
+                            placeholder="XXXX-XXXX"
+                            maxLength={9}
+                        />
+                    </div>
                 </div>
-                <div className="text-center">
-                    <p className="text-zinc-600 text-sm mb-2">Your PIN:</p>
-                    <span className="text-white font-mono font-bold text-2xl tracking-wider">{userPin}</span>
+
+                {/* OR Divider */}
+                <div className="flex items-center gap-4 w-full max-w-md">
+                    <div className="flex-1 h-px bg-zinc-800"></div>
+                    <span className="text-zinc-600 text-xs font-bold uppercase">or</span>
+                    <div className="flex-1 h-px bg-zinc-800"></div>
+                </div>
+
+                {/* QR Code Options */}
+                <div className="w-full max-w-md grid grid-cols-2 gap-4">
+                    <button
+                        onClick={() => setMode('scan')}
+                        className="aspect-square bg-zinc-900 border-2 border-zinc-800 rounded-3xl flex flex-col items-center justify-center gap-3 hover:bg-zinc-800 hover:border-indigo-500 transition-all group"
+                    >
+                        <div className="w-16 h-16 rounded-2xl bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                            </svg>
+                        </div>
+                        <span className="text-zinc-500 font-bold text-sm group-hover:text-white transition-colors">
+                            Scan QR
+                        </span>
+                    </button>
+
+                    <button
+                        onClick={() => setMode('myqr')}
+                        className="aspect-square bg-zinc-900 border-2 border-zinc-800 rounded-3xl flex flex-col items-center justify-center gap-3 hover:bg-zinc-800 hover:border-indigo-500 transition-all group"
+                    >
+                        <div className="w-16 h-16 rounded-2xl bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                            </svg>
+                        </div>
+                        <span className="text-zinc-500 font-bold text-sm group-hover:text-white transition-colors">
+                            My QR
+                        </span>
+                    </button>
+                </div>
+
+                {/* Your PIN Display */}
+                <div className="text-center mt-4">
+                    <p className="text-zinc-600 text-xs uppercase tracking-widest mb-2">Your PIN</p>
+                    <span className="text-white font-mono font-bold text-xl tracking-wider">{userPin}</span>
                 </div>
             </div>
+
             <div className="mt-auto pb-8">
-                <button onClick={() => onSend(pin)} disabled={!pin.trim() || loading} className="w-full py-4 rounded-full font-bold text-lg bg-white text-black">
+                <button
+                    onClick={() => onSend(pin)}
+                    disabled={!pin.trim() || loading}
+                    className={`w-full py-4 rounded-full font-bold text-lg transition-all ${!pin.trim() || loading
+                            ? 'bg-zinc-800 text-zinc-600'
+                            : 'bg-white text-black hover:bg-zinc-200'
+                        }`}
+                >
                     {loading ? 'Sending...' : 'Send Friend Request'}
                 </button>
             </div>
