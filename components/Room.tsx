@@ -737,7 +737,8 @@ export function Room() {
                 <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[40%] bg-indigo-600/20 blur-[100px] rounded-full pointer-events-none"></div>
                 <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[40%] bg-purple-600/20 blur-[100px] rounded-full pointer-events-none"></div>
 
-                <div className="flex-1 flex flex-col p-4 pt-8 z-10 overflow-hidden">
+                {/* Content Wrapper - Centered with Max Width */}
+                <div className="flex-1 flex flex-col p-4 pt-8 z-10 overflow-hidden w-full max-w-6xl mx-auto">
                     {/* Compact Header */}
                     <div className="flex justify-between items-center mb-4">
                         <div className="bg-zinc-900/80 backdrop-blur rounded-xl px-3 py-1.5 border border-zinc-800">
@@ -805,8 +806,8 @@ export function Room() {
                     </div>
 
                     {/* Main Grid - Scrollable */}
-                    <div className="flex-1 overflow-y-auto overscroll-y-contain -mx-4 px-4 md:px-8">
-                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 md:gap-4 pb-4">
+                    <div className="flex-1 overflow-y-auto overscroll-y-contain -mx-4 px-4 md:px-0 custom-scrollbar">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 pb-4">
                             {/* Add Friend Card - Compact */}
                             <button
                                 onClick={() => setView('ADD_FRIEND')}
@@ -841,19 +842,19 @@ export function Room() {
                                         <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-zinc-700'}`}></div>
 
                                         {/* Avatar */}
-                                        <div className="w-14 h-14 rounded-xl bg-zinc-800 shadow-lg overflow-hidden ring-1 ring-white/10">
+                                        <div className="w-14 h-14 md:w-20 md:h-20 rounded-xl bg-zinc-800 shadow-lg overflow-hidden ring-1 ring-white/10 mt-2">
                                             {friend.image_url ? (
                                                 <img src={friend.image_url} alt={friend.username} className="w-full h-full object-cover" />
                                             ) : (
-                                                <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-xl">
+                                                <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-xl md:text-3xl">
                                                     {(friend.username || friend.pin || '?').charAt(0).toUpperCase()}
                                                 </div>
                                             )}
                                         </div>
 
                                         {/* Name */}
-                                        <div className="w-full text-center">
-                                            <p className="text-white font-bold text-[10px] truncate px-1 leading-tight">
+                                        <div className="w-full text-center mb-2">
+                                            <p className="text-white font-bold text-[10px] md:text-xs truncate px-1 leading-tight">
                                                 {friend.username || `User ${friend.pin}` || 'Unnamed'}
                                             </p>
                                             {showSpeaking && (
@@ -888,8 +889,6 @@ export function Room() {
         );
     };
 
-
-
     return (
         <div className="h-full w-full bg-zinc-950 flex items-center justify-center">
             {/* Desktop Container Wrapper - Responsive */}
@@ -908,86 +907,89 @@ export function Room() {
                                 <div className="absolute inset-0 z-0 bg-gradient-to-b from-zinc-900 to-black"></div>
                             )}
 
-                            {/* 2. Top Controls - Compact */}
-                            <div className="relative z-50 p-3 pt-4 flex justify-between items-start flex-shrink-0">
-                                <button onClick={() => { setActiveFriend(null); setView('DASHBOARD'); setIsChatOpen(false); }} className="p-2 bg-zinc-900/50 backdrop-blur-md rounded-full text-white hover:bg-zinc-800 transition-all border border-white/10">
-                                    <ChevronRight className="w-5 h-5 rotate-180" />
-                                </button>
-                                <div className="flex flex-col items-center">
-                                    <div className={`px-3 py-1 rounded-full backdrop-blur-md border ${connectionStatus === 'connected' ? 'bg-green-500/20 border-green-500/30 text-green-400' : 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400'} font-bold text-[9px] tracking-widest uppercase`}>
-                                        {connectionStatus === 'connected' ? 'LIVE' : 'CONNECTING...'}
-                                    </div>
-                                </div>
-                                <button onClick={toggleHandsFree} className={`p-2 rounded-full backdrop-blur-md transition-all border border-white/10 ${isHandsFree ? 'bg-red-500 text-white border-red-500' : 'bg-zinc-900/50 text-white hover:bg-zinc-800'}`}>
-                                    {isHandsFree ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
-                                </button>
-                            </div>
-
-                            {/* 3. Center Content (Friend Info) - Responsive */}
-                            <div className="relative z-10 flex flex-col items-center justify-center px-4 py-2 flex-shrink-0">
-                                <div className="relative w-28 h-28 md:w-56 md:h-56 mb-3 md:mb-6">
-                                    {isRemoteSpeaking && (
-                                        <div className="absolute inset-0 rounded-full border-4 border-indigo-500 animate-ping opacity-50"></div>
-                                    )}
-                                    <div className={`w-full h-full rounded-full overflow-hidden border-4 shadow-2xl ${isRemoteSpeaking ? 'border-indigo-500 shadow-indigo-500/50' : 'border-white/10'}`}>
-                                        {activeFriend?.image_url ? (
-                                            <img src={activeFriend.image_url} className="w-full h-full object-cover" alt="friend" />
-                                        ) : (
-                                            <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-4xl md:text-7xl shadow-inner">
-                                                {(activeFriend?.username || activeFriend?.pin || '?').charAt(0).toUpperCase()}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <h1 className="text-white font-black text-xl md:text-5xl mb-1 md:mb-2 text-center drop-shadow-xl tracking-tight max-w-[80vw] truncate">{activeFriend?.username || 'Unknown'}</h1>
-                                <p className={`font-bold tracking-[0.2em] text-[9px] md:text-sm uppercase ${onlineUsers.has(activeFriend?.clerk_user_id) ? 'text-green-400' : 'text-zinc-500'}`}>
-                                    {isRemoteSpeaking
-                                        ? 'IS SPEAKING...'
-                                        : (onlineUsers.has(activeFriend?.clerk_user_id) ? 'ONLINE' : 'OFFLINE')}
-                                </p>
-                                {connectionStatus !== 'connected' && (
-                                    <p className="text-zinc-600 text-[8px] md:text-xs font-bold mt-1 uppercase animate-pulse">
-                                        Wait for them to join...
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Spacer */}
-                            <div className="flex-1 min-h-0"></div>
-
-                            {/* 4. Bottom PTT Button - Responsive */}
-                            <div className="relative z-10 pb-20 md:pb-32 flex flex-col items-center justify-end w-full flex-shrink-0">
-                                <div className="relative w-36 h-36 md:w-72 md:h-72 touch-none">
-                                    {isSpeaking && (
-                                        <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-30 delay-75"></div>
-                                    )}
-                                    {isSpeaking && (
-                                        <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-50"></div>
-                                    )}
-
-                                    {/* Button */}
-                                    <button
-                                        onMouseDown={handleStartTalk}
-                                        onMouseUp={handleStopTalk}
-                                        onMouseLeave={handleStopTalk}
-                                        onTouchStart={handleStartTalk}
-                                        onTouchEnd={handleStopTalk}
-                                        onTouchCancel={handleStopTalk}
-                                        onContextMenu={(e) => e.preventDefault()}
-                                        style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
-                                        className={`relative w-full h-full rounded-full transition-all duration-100 flex items-center justify-center shadow-2xl overflow-hidden select-none
-                                            ${isSpeaking
-                                                ? 'bg-indigo-600 scale-95 border-8 border-indigo-400/50 ring-4 ring-indigo-500/30'
-                                                : 'bg-zinc-800 hover:bg-zinc-700 border-8 border-zinc-700 ring-4 ring-black/40'}
-                                        `}
-                                    >
-                                        {isSpeaking ? (
-                                            <div className="w-20 h-20 md:w-32 md:h-32 bg-white/20 rounded-full animate-pulse blur-xl"></div>
-                                        ) : (
-                                            <div className="w-full h-full bg-gradient-to-b from-white/5 to-transparent"></div>
-                                        )}
+                            {/* 2. Content Wrapper for Desktop Centering */}
+                            <div className="relative z-10 w-full max-w-4xl mx-auto h-full flex flex-col">
+                                {/* Top Controls - Compact */}
+                                <div className="p-3 pt-4 flex justify-between items-start flex-shrink-0">
+                                    <button onClick={() => { setActiveFriend(null); setView('DASHBOARD'); setIsChatOpen(false); }} className="p-2 bg-zinc-900/50 backdrop-blur-md rounded-full text-white hover:bg-zinc-800 transition-all border border-white/10">
+                                        <ChevronRight className="w-5 h-5 rotate-180" />
                                     </button>
+                                    <div className="flex flex-col items-center">
+                                        <div className={`px-3 py-1 rounded-full backdrop-blur-md border ${connectionStatus === 'connected' ? 'bg-green-500/20 border-green-500/30 text-green-400' : 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400'} font-bold text-[9px] md:text-xs tracking-widest uppercase`}>
+                                            {connectionStatus === 'connected' ? 'LIVE' : 'CONNECTING...'}
+                                        </div>
+                                    </div>
+                                    <button onClick={toggleHandsFree} className={`p-2 rounded-full backdrop-blur-md transition-all border border-white/10 ${isHandsFree ? 'bg-red-500 text-white border-red-500' : 'bg-zinc-900/50 text-white hover:bg-zinc-800'}`}>
+                                        {isHandsFree ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+                                    </button>
+                                </div>
+
+                                {/* 3. Center Content (Friend Info) - Responsive */}
+                                <div className="flex flex-col items-center justify-center px-4 py-2 flex-shrink-0">
+                                    <div className="relative w-28 h-28 md:w-56 md:h-56 mb-3 md:mb-6">
+                                        {isRemoteSpeaking && (
+                                            <div className="absolute inset-0 rounded-full border-4 border-indigo-500 animate-ping opacity-50"></div>
+                                        )}
+                                        <div className={`w-full h-full rounded-full overflow-hidden border-4 shadow-2xl ${isRemoteSpeaking ? 'border-indigo-500 shadow-indigo-500/50' : 'border-white/10'}`}>
+                                            {activeFriend?.image_url ? (
+                                                <img src={activeFriend.image_url} className="w-full h-full object-cover" alt="friend" />
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-4xl md:text-7xl shadow-inner">
+                                                    {(activeFriend?.username || activeFriend?.pin || '?').charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <h1 className="text-white font-black text-xl md:text-5xl mb-1 md:mb-2 text-center drop-shadow-xl tracking-tight max-w-[80vw] truncate">{activeFriend?.username || 'Unknown'}</h1>
+                                    <p className={`font-bold tracking-[0.2em] text-[9px] md:text-sm uppercase ${onlineUsers.has(activeFriend?.clerk_user_id) ? 'text-green-400' : 'text-zinc-500'}`}>
+                                        {isRemoteSpeaking
+                                            ? 'IS SPEAKING...'
+                                            : (onlineUsers.has(activeFriend?.clerk_user_id) ? 'ONLINE' : 'OFFLINE')}
+                                    </p>
+                                    {connectionStatus !== 'connected' && (
+                                        <p className="text-zinc-600 text-[8px] md:text-xs font-bold mt-1 uppercase animate-pulse">
+                                            Wait for them to join...
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Spacer */}
+                                <div className="flex-1 min-h-0"></div>
+
+                                {/* 4. Bottom PTT Button - Responsive */}
+                                <div className="pb-20 md:pb-32 flex flex-col items-center justify-end w-full flex-shrink-0">
+                                    <div className="relative w-36 h-36 md:w-72 md:h-72 touch-none">
+                                        {isSpeaking && (
+                                            <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-30 delay-75"></div>
+                                        )}
+                                        {isSpeaking && (
+                                            <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-50"></div>
+                                        )}
+
+                                        {/* Button */}
+                                        <button
+                                            onMouseDown={handleStartTalk}
+                                            onMouseUp={handleStopTalk}
+                                            onMouseLeave={handleStopTalk}
+                                            onTouchStart={handleStartTalk}
+                                            onTouchEnd={handleStopTalk}
+                                            onTouchCancel={handleStopTalk}
+                                            onContextMenu={(e) => e.preventDefault()}
+                                            style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
+                                            className={`relative w-full h-full rounded-full transition-all duration-100 flex items-center justify-center shadow-2xl overflow-hidden select-none
+                                                ${isSpeaking
+                                                    ? 'bg-indigo-600 scale-95 border-8 border-indigo-400/50 ring-4 ring-indigo-500/30'
+                                                    : 'bg-zinc-800 hover:bg-zinc-700 border-8 border-zinc-700 ring-4 ring-black/40'}
+                                            `}
+                                        >
+                                            {isSpeaking ? (
+                                                <div className="w-20 h-20 md:w-32 md:h-32 bg-white/20 rounded-full animate-pulse blur-xl"></div>
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-b from-white/5 to-transparent"></div>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
