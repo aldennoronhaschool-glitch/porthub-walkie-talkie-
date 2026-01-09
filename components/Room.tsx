@@ -219,8 +219,8 @@ const AddFriendView = ({
                     onClick={() => onSend(pin)}
                     disabled={!pin.trim() || loading}
                     className={`w-full py-4 rounded-full font-bold text-lg transition-all ${!pin.trim() || loading
-                            ? 'bg-zinc-800 text-zinc-600'
-                            : 'bg-white text-black hover:bg-zinc-200'
+                        ? 'bg-zinc-800 text-zinc-600'
+                        : 'bg-white text-black hover:bg-zinc-200'
                         }`}
                 >
                     {loading ? 'Sending...' : 'Send Friend Request'}
@@ -344,6 +344,7 @@ export function Room() {
     const [friendRequests, setFriendRequests] = useState<{ received: any[], sent: any[] }>({ received: [], sent: [] });
     const [addFriendPin, setAddFriendPin] = useState("");
     const [loadingFriends, setLoadingFriends] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
     // Chat State
     const [isChatOpen, setIsChatOpen] = useState(false);
@@ -700,109 +701,173 @@ export function Room() {
 
     // --- Views ---
 
-    const Dashboard = () => (
-        <div className="flex flex-col h-full bg-black relative overflow-hidden">
-            {/* Background Ambient Glow */}
-            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[40%] bg-indigo-600/20 blur-[100px] rounded-full pointer-events-none"></div>
-            <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[40%] bg-purple-600/20 blur-[100px] rounded-full pointer-events-none"></div>
+    const Dashboard = () => {
+        // Filter friends based on search query
+        const filteredFriends = friends.filter((friend: any) => {
+            if (!searchQuery.trim()) return true;
+            const query = searchQuery.toLowerCase();
+            return (
+                friend.username?.toLowerCase().includes(query) ||
+                friend.pin?.toLowerCase().includes(query)
+            );
+        });
 
-            <div className="flex-1 flex flex-col p-6 pt-12 z-10">
-                {/* Header */}
-                <div className="flex justify-between items-center mb-8">
-                    <div className="bg-zinc-900/80 backdrop-blur rounded-2xl px-4 py-2 border border-zinc-800">
-                        <span className="text-zinc-500 text-[10px] font-bold tracking-widest uppercase block mb-0.5">MY PIN</span>
-                        <span className="text-white font-black text-lg tracking-wider font-mono select-all">{userPin || '...'}</span>
+        return (
+            <div className="flex flex-col h-full bg-black relative overflow-hidden">
+                {/* Background Ambient Glow */}
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[40%] bg-indigo-600/20 blur-[100px] rounded-full pointer-events-none"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[40%] bg-purple-600/20 blur-[100px] rounded-full pointer-events-none"></div>
+
+                <div className="flex-1 flex flex-col p-4 pt-8 z-10 overflow-hidden">
+                    {/* Compact Header */}
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="bg-zinc-900/80 backdrop-blur rounded-xl px-3 py-1.5 border border-zinc-800">
+                            <span className="text-zinc-500 text-[9px] font-bold tracking-widest uppercase block mb-0.5">MY PIN</span>
+                            <span className="text-white font-black text-sm tracking-wider font-mono select-all">{userPin || '...'}</span>
+                        </div>
+                        <button onClick={() => setView('SETTINGS')} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-white hover:bg-zinc-800 transition-colors">
+                            <Settings className="w-5 h-5" />
+                        </button>
                     </div>
-                    <button onClick={() => setView('SETTINGS')} className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center text-white hover:bg-zinc-800 transition-colors">
-                        <Settings className="w-6 h-6" />
-                    </button>
-                </div>
 
-                {/* Friend Requests (Horizontal Scroll if many, or compact stack) */}
-                {friendRequests.received.length > 0 && (
-                    <div className="mb-6">
-                        <h3 className="text-zinc-500 font-bold text-xs uppercase tracking-widest mb-3 ml-2">INBOX</h3>
-                        <div className="flex flex-col gap-2">
-                            {friendRequests.received.map((req: any) => (
-                                <div key={req.id} className="bg-zinc-900/80 backdrop-blur-md rounded-3xl p-4 flex justify-between items-center border border-zinc-800">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-2xl bg-indigo-500 flex items-center justify-center font-bold">?</div>
-                                        <span className="text-white font-bold">{req.sender?.username || 'Unknown'}</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => handleFriendAction(req.id, 'accept')} className="w-10 h-10 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center hover:bg-green-500 hover:text-white transition-all">✓</button>
-                                        <button onClick={() => handleFriendAction(req.id, 'reject')} className="w-10 h-10 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">✕</button>
-                                    </div>
-                                </div>
-                            ))}
+                    {/* Search Bar */}
+                    <div className="mb-3">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search friends..."
+                                className="w-full bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 outline-none focus:border-indigo-500 transition-colors"
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
                         </div>
                     </div>
-                )}
 
-                {/* Main Grid */}
-                <div className="flex-1 overflow-y-auto overscroll-y-contain">
-                    <div className="grid grid-cols-2 gap-4 pb-32">
-                        {/* Add Friend Card */}
-                        <button
-                            onClick={() => setView('ADD_FRIEND')}
-                            className="aspect-square bg-zinc-900/50 border-2 border-dashed border-zinc-800 rounded-[2rem] flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 hover:border-zinc-700 transition-all group"
-                        >
-                            <div className="w-14 h-14 rounded-2xl bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-white group-hover:text-black transition-colors">
-                                <Plus className="w-8 h-8" />
+                    {/* Friend Requests - Compact */}
+                    {friendRequests.received.length > 0 && (
+                        <div className="mb-3">
+                            <h3 className="text-zinc-500 font-bold text-[10px] uppercase tracking-widest mb-2 ml-1">INBOX ({friendRequests.received.length})</h3>
+                            <div className="flex flex-col gap-2 max-h-24 overflow-y-auto">
+                                {friendRequests.received.map((req: any) => (
+                                    <div key={req.id} className="bg-zinc-900/80 backdrop-blur-md rounded-2xl p-2.5 flex justify-between items-center border border-zinc-800">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 rounded-xl bg-indigo-500 flex items-center justify-center font-bold text-sm">?</div>
+                                            <span className="text-white font-bold text-sm">{req.sender?.username || 'Unknown'}</span>
+                                        </div>
+                                        <div className="flex gap-1.5">
+                                            <button onClick={() => handleFriendAction(req.id, 'accept')} className="w-8 h-8 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center hover:bg-green-500 hover:text-white transition-all text-sm">✓</button>
+                                            <button onClick={() => handleFriendAction(req.id, 'reject')} className="w-8 h-8 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all text-sm">✕</button>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                            <span className="text-zinc-500 font-bold text-sm tracking-wide group-hover:text-white">ADD</span>
-                        </button>
+                        </div>
+                    )}
 
-                        {/* Friend Cards */}
-                        {friends.map((friend: any) => {
-                            const isActive = activeFriend?.clerk_user_id === friend.clerk_user_id;
-                            const isOnline = onlineUsers.has(friend.clerk_user_id);
-                            const showSpeaking = isActive && isRemoteSpeaking;
+                    {/* Friends Count */}
+                    <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-zinc-500 font-bold text-[10px] uppercase tracking-widest ml-1">
+                            FRIENDS {filteredFriends.length > 0 && `(${filteredFriends.length})`}
+                        </h3>
+                        {searchQuery && (
+                            <span className="text-zinc-600 text-[9px]">
+                                {filteredFriends.length} of {friends.length}
+                            </span>
+                        )}
+                    </div>
 
-                            return (
-                                <button
-                                    key={friend.clerk_user_id}
-                                    onClick={() => {
-                                        setActiveFriend(friend);
-                                        setView('CALL');
-                                        setIsChatOpen(false);
-                                        sendCallSignal(friend.clerk_user_id);
-                                    }}
-                                    className={`relative aspect-square rounded-[2rem] p-4 flex flex-col items-center justify-between transition-all overflow-hidden
-                                        ${showSpeaking ? 'bg-indigo-600 ring-4 ring-indigo-400 ring-offset-4 ring-offset-black scale-105 z-10' : 'bg-zinc-900 hover:bg-zinc-800'}
-                                    `}
-                                >
-                                    {/* Status Dot */}
-                                    <div className={`absolute top-4 right-4 w-3 h-3 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_10px_#22c55e]' : 'bg-zinc-700'}`}></div>
+                    {/* Main Grid - Scrollable */}
+                    <div className="flex-1 overflow-y-auto overscroll-y-contain -mx-4 px-4">
+                        <div className="grid grid-cols-3 gap-2.5 pb-4">
+                            {/* Add Friend Card - Compact */}
+                            <button
+                                onClick={() => setView('ADD_FRIEND')}
+                                className="aspect-square bg-zinc-900/50 border-2 border-dashed border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-1.5 hover:bg-zinc-900 hover:border-zinc-700 transition-all group"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-white group-hover:text-black transition-colors">
+                                    <Plus className="w-6 h-6" />
+                                </div>
+                                <span className="text-zinc-500 font-bold text-[10px] tracking-wide group-hover:text-white">ADD</span>
+                            </button>
 
-                                    {/* Avatar */}
-                                    <div className="w-20 h-20 rounded-[1.2rem] bg-zinc-800 shadow-lg mt-2 overflow-hidden ring-2 ring-white/10">
-                                        {friend.image_url ? (
-                                            <img src={friend.image_url} alt={friend.username} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-3xl">
-                                                {(friend.username || friend.pin || '?').charAt(0).toUpperCase()}
-                                            </div>
-                                        )}
-                                    </div>
+                            {/* Friend Cards - Compact */}
+                            {filteredFriends.map((friend: any) => {
+                                const isActive = activeFriend?.clerk_user_id === friend.clerk_user_id;
+                                const isOnline = onlineUsers.has(friend.clerk_user_id);
+                                const showSpeaking = isActive && isRemoteSpeaking;
 
-                                    {/* Name */}
-                                    <div className="w-full text-center">
-                                        <p className="text-white font-bold text-sm truncate px-2">
-                                            {friend.username || `User ${friend.pin}` || 'Unnamed'}
-                                        </p>
-                                        {showSpeaking && (
-                                            <p className="text-white/80 text-[10px] font-bold animate-pulse mt-1 tracking-widest uppercase">TALKING</p>
-                                        )}
-                                    </div>
-                                </button>
-                            );
-                        })}
+                                return (
+                                    <button
+                                        key={friend.clerk_user_id}
+                                        onClick={() => {
+                                            setActiveFriend(friend);
+                                            setView('CALL');
+                                            setIsChatOpen(false);
+                                            sendCallSignal(friend.clerk_user_id);
+                                        }}
+                                        className={`relative aspect-square rounded-2xl p-2 flex flex-col items-center justify-between transition-all overflow-hidden
+                                            ${showSpeaking ? 'bg-indigo-600 ring-2 ring-indigo-400 scale-105 z-10' : 'bg-zinc-900 hover:bg-zinc-800'}
+                                        `}
+                                    >
+                                        {/* Status Dot */}
+                                        <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-zinc-700'}`}></div>
+
+                                        {/* Avatar */}
+                                        <div className="w-14 h-14 rounded-xl bg-zinc-800 shadow-lg overflow-hidden ring-1 ring-white/10">
+                                            {friend.image_url ? (
+                                                <img src={friend.image_url} alt={friend.username} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-xl">
+                                                    {(friend.username || friend.pin || '?').charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Name */}
+                                        <div className="w-full text-center">
+                                            <p className="text-white font-bold text-[10px] truncate px-1 leading-tight">
+                                                {friend.username || `User ${friend.pin}` || 'Unnamed'}
+                                            </p>
+                                            {showSpeaking && (
+                                                <p className="text-white/80 text-[8px] font-bold animate-pulse mt-0.5 tracking-wider uppercase">TALK</p>
+                                            )}
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* No Results Message */}
+                        {searchQuery && filteredFriends.length === 0 && (
+                            <div className="text-center py-8">
+                                <Search className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
+                                <p className="text-zinc-600 font-bold text-sm">No friends found</p>
+                                <p className="text-zinc-700 text-xs mt-1">Try a different search term</p>
+                            </div>
+                        )}
+
+                        {/* Empty State */}
+                        {!searchQuery && friends.length === 0 && (
+                            <div className="text-center py-8">
+                                <Users className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
+                                <p className="text-zinc-600 font-bold text-sm">No friends yet</p>
+                                <p className="text-zinc-700 text-xs mt-1">Tap the + button to add friends</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+    };
 
 
 
