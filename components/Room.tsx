@@ -805,8 +805,8 @@ export function Room() {
                     </div>
 
                     {/* Main Grid - Scrollable */}
-                    <div className="flex-1 overflow-y-auto overscroll-y-contain -mx-4 px-4">
-                        <div className="grid grid-cols-3 gap-2.5 pb-4">
+                    <div className="flex-1 overflow-y-auto overscroll-y-contain -mx-4 px-4 md:px-8">
+                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 md:gap-4 pb-4">
                             {/* Add Friend Card - Compact */}
                             <button
                                 onClick={() => setView('ADD_FRIEND')}
@@ -892,8 +892,8 @@ export function Room() {
 
     return (
         <div className="h-full w-full bg-zinc-950 flex items-center justify-center">
-            {/* Desktop Container Wrapper */}
-            <div className="w-full max-w-md h-full bg-black text-white relative shadow-2xl overflow-hidden border-x border-zinc-800">
+            {/* Desktop Container Wrapper - Responsive */}
+            <div className="w-full md:max-w-full h-full bg-black text-white relative shadow-2xl md:shadow-none overflow-hidden border-x border-zinc-800 md:border-none">
                 <AnimatePresence mode="wait">
                     {view === 'DASHBOARD' && <Dashboard />}
                     {view === 'CALL' && (
@@ -923,9 +923,9 @@ export function Room() {
                                 </button>
                             </div>
 
-                            {/* 3. Center Content (Friend Info) - Fixed Height */}
+                            {/* 3. Center Content (Friend Info) - Responsive */}
                             <div className="relative z-10 flex flex-col items-center justify-center px-4 py-2 flex-shrink-0">
-                                <div className="relative w-28 h-28 mb-3">
+                                <div className="relative w-28 h-28 md:w-56 md:h-56 mb-3 md:mb-6">
                                     {isRemoteSpeaking && (
                                         <div className="absolute inset-0 rounded-full border-4 border-indigo-500 animate-ping opacity-50"></div>
                                     )}
@@ -933,21 +933,21 @@ export function Room() {
                                         {activeFriend?.image_url ? (
                                             <img src={activeFriend.image_url} className="w-full h-full object-cover" alt="friend" />
                                         ) : (
-                                            <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-4xl shadow-inner">
+                                            <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-4xl md:text-7xl shadow-inner">
                                                 {(activeFriend?.username || activeFriend?.pin || '?').charAt(0).toUpperCase()}
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
-                                <h1 className="text-white font-black text-xl mb-1 text-center drop-shadow-xl tracking-tight max-w-[80vw] truncate">{activeFriend?.username || 'Unknown'}</h1>
-                                <p className={`font-bold tracking-[0.2em] text-[9px] uppercase ${onlineUsers.has(activeFriend?.clerk_user_id) ? 'text-green-400' : 'text-zinc-500'}`}>
+                                <h1 className="text-white font-black text-xl md:text-5xl mb-1 md:mb-2 text-center drop-shadow-xl tracking-tight max-w-[80vw] truncate">{activeFriend?.username || 'Unknown'}</h1>
+                                <p className={`font-bold tracking-[0.2em] text-[9px] md:text-sm uppercase ${onlineUsers.has(activeFriend?.clerk_user_id) ? 'text-green-400' : 'text-zinc-500'}`}>
                                     {isRemoteSpeaking
                                         ? 'IS SPEAKING...'
                                         : (onlineUsers.has(activeFriend?.clerk_user_id) ? 'ONLINE' : 'OFFLINE')}
                                 </p>
                                 {connectionStatus !== 'connected' && (
-                                    <p className="text-zinc-600 text-[8px] font-bold mt-1 uppercase animate-pulse">
+                                    <p className="text-zinc-600 text-[8px] md:text-xs font-bold mt-1 uppercase animate-pulse">
                                         Wait for them to join...
                                     </p>
                                 )}
@@ -956,9 +956,9 @@ export function Room() {
                             {/* Spacer */}
                             <div className="flex-1 min-h-0"></div>
 
-                            {/* 4. Bottom PTT Button - Fixed Size */}
-                            <div className="relative z-10 pb-20 flex flex-col items-center justify-end w-full flex-shrink-0">
-                                <div className="relative w-36 h-36 touch-none">
+                            {/* 4. Bottom PTT Button - Responsive */}
+                            <div className="relative z-10 pb-20 md:pb-32 flex flex-col items-center justify-end w-full flex-shrink-0">
+                                <div className="relative w-36 h-36 md:w-72 md:h-72 touch-none">
                                     {isSpeaking && (
                                         <div className="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-30 delay-75"></div>
                                     )}
@@ -983,7 +983,7 @@ export function Room() {
                                         `}
                                     >
                                         {isSpeaking ? (
-                                            <div className="w-20 h-20 bg-white/20 rounded-full animate-pulse blur-xl"></div>
+                                            <div className="w-20 h-20 md:w-32 md:h-32 bg-white/20 rounded-full animate-pulse blur-xl"></div>
                                         ) : (
                                             <div className="w-full h-full bg-gradient-to-b from-white/5 to-transparent"></div>
                                         )}
