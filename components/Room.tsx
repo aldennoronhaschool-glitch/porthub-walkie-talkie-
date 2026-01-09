@@ -878,7 +878,7 @@ export function Room() {
                 <AnimatePresence mode="wait">
                     {view === 'DASHBOARD' && <Dashboard />}
                     {view === 'CALL' && (
-                        <div className="flex flex-col h-full bg-black relative overflow-hidden">
+                        <div className="flex flex-col h-[100dvh] bg-black relative overflow-hidden">
                             {/* 1. Full Screen Background Image (Blurred/Darkened) */}
                             {activeFriend?.image_url ? (
                                 <div className="absolute inset-0 z-0">
@@ -890,7 +890,7 @@ export function Room() {
                             )}
 
                             {/* 2. Top Controls - Compact */}
-                            <div className="relative z-50 p-3 pt-6 flex justify-between items-start flex-shrink-0">
+                            <div className="relative z-50 p-3 pt-4 flex justify-between items-start flex-shrink-0">
                                 <button onClick={() => { setActiveFriend(null); setView('DASHBOARD'); setIsChatOpen(false); }} className="p-2 bg-zinc-900/50 backdrop-blur-md rounded-full text-white hover:bg-zinc-800 transition-all border border-white/10">
                                     <ChevronRight className="w-5 h-5 rotate-180" />
                                 </button>
@@ -905,7 +905,7 @@ export function Room() {
                             </div>
 
                             {/* 3. Center Content (Friend Info) - Fixed Height */}
-                            <div className="relative z-10 flex flex-col items-center justify-center px-4 py-4 flex-shrink-0">
+                            <div className="relative z-10 flex flex-col items-center justify-center px-4 py-2 flex-shrink-0">
                                 <div className="relative w-28 h-28 mb-3">
                                     {isRemoteSpeaking && (
                                         <div className="absolute inset-0 rounded-full border-4 border-indigo-500 animate-ping opacity-50"></div>
@@ -975,7 +975,7 @@ export function Room() {
                             {/* Chat Button (Bottom Left Floating) - Always Visible */}
                             <button
                                 onClick={() => setIsChatOpen(true)}
-                                className="absolute bottom-4 left-4 z-40 w-12 h-12 bg-zinc-800/80 backdrop-blur rounded-full flex items-center justify-center text-white border border-white/10 shadow-xl hover:bg-zinc-700 transition-all"
+                                className="absolute bottom-6 left-6 z-40 w-12 h-12 bg-zinc-800/80 backdrop-blur rounded-full flex items-center justify-center text-white border border-white/10 shadow-xl hover:bg-zinc-700 transition-all"
                             >
                                 <MessageSquare className="w-5 h-5" />
                             </button>
