@@ -348,8 +348,13 @@ export function Room() {
 
     // Chat State
     const [isChatOpen, setIsChatOpen] = useState(false);
+    // Ref to track chat open state inside subscription callback without re-subscribing
+    const isChatOpenRef = useRef(false);
+    useEffect(() => { isChatOpenRef.current = isChatOpen; }, [isChatOpen]);
+
     const [chatMessages, setChatMessages] = useState<any[]>([]);
     const [newMessage, setNewMessage] = useState("");
+    const [unreadCount, setUnreadCount] = useState(0);
     const chatEndRef = useRef<HTMLDivElement>(null);
 
     // Image Message State
@@ -378,7 +383,14 @@ export function Room() {
                 (m.sender_id === user.id && m.receiver_id === activeFriend.clerk_user_id) ||
                 (m.sender_id === activeFriend.clerk_user_id && m.receiver_id === user.id)
             ) || [];
+
             setChatMessages(conversation);
+
+            // Calculate initial unreads
+            const unreads = conversation.filter((m: any) => m.receiver_id === user.id && !m.is_read).length;
+            if (!isChatOpenRef.current) {
+                setUnreadCount(unreads);
+            }
         };
         fetchHistory();
 
@@ -391,6 +403,11 @@ export function Room() {
                         (m.sender_id === activeFriend.clerk_user_id && m.receiver_id === user.id)
                     ) {
                         setChatMessages(prev => [...prev, m]);
+
+                        // Increment unread count if chat is closed and we are the receiver
+                        if (!isChatOpenRef.current && m.receiver_id === user.id) {
+                            setUnreadCount(prev => prev + 1);
+                        }
                     }
                 } else if (payload.eventType === 'UPDATE') {
                     setChatMessages(prev => prev.map(m => m.id === payload.new.id ? payload.new : m));
@@ -403,7 +420,9 @@ export function Room() {
 
     // Mark messages as read when chat is open
     useEffect(() => {
-        if (isChatOpen && chatMessages.length > 0 && user) {
+        if (isChatOpen && user) {
+            setUnreadCount(0); // Clear badge immediately
+
             const unreadIds = chatMessages
                 .filter((m: any) => m.receiver_id === user.id && !m.is_read)
                 .map((m: any) => m.id);
@@ -978,6 +997,11 @@ export function Room() {
                                 className="absolute bottom-6 left-6 z-40 w-12 h-12 bg-zinc-800/80 backdrop-blur rounded-full flex items-center justify-center text-white border border-white/10 shadow-xl hover:bg-zinc-700 transition-all"
                             >
                                 <MessageSquare className="w-5 h-5" />
+                                {unreadCount > 0 && (
+                                    <div className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-black px-1 animate-bounce shadow-sm">
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </div>
+                                )}
                             </button>
 
                             {/* Chat Overlay */}
