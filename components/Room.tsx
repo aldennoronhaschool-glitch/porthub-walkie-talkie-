@@ -9,9 +9,88 @@ import { setupBackgroundAudio, cleanupBackgroundAudio } from "@/lib/wakeLock";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { supabase } from "@/lib/supabase";
 
-type ViewState = 'DASHBOARD' | 'SETTINGS' | 'ADD_FRIEND' | 'CALL' | 'EDIT_PROFILE';
-
 // --- Extracted Components ---
+
+type ViewState = 'DASHBOARD' | 'SETTINGS' | 'ADD_FRIEND' | 'CALL' | 'EDIT_PROFILE' | 'CREATE_ROOM' | 'ROOM_DETAILS';
+
+const RoomView = ({
+    room,
+    setView,
+    userPin,
+    onAddMember
+}: {
+    room: any,
+    setView: any,
+    userPin: string,
+    onAddMember: (scannedData: string) => void
+}) => {
+    const [mode, setMode] = useState<'info' | 'scan'>('info');
+    const QRCode = require('qrcode.react').QRCodeSVG;
+
+    if (mode === 'scan') {
+        const { QRCodeScanner } = require('@/components/QRCodeScanner');
+        return (
+            <QRCodeScanner
+                onScan={(decodedText: string) => {
+                    setMode('info');
+                    onAddMember(decodedText);
+                }}
+                onClose={() => setMode('info')}
+            />
+        );
+    }
+
+    return (
+        <div key="room-view" className="flex flex-col h-full bg-black p-6 pt-12">
+            <div className="flex justify-between items-center mb-8">
+                <button onClick={() => setView('DASHBOARD')} className="p-2 bg-zinc-900 rounded-full text-white">
+                    <ChevronRight className="w-6 h-6 rotate-180" />
+                </button>
+                <div className="text-center">
+                    <h2 className="text-white font-black text-xl tracking-wide uppercase">{room?.name || 'ROOM'}</h2>
+                    <span className="text-zinc-500 text-xs font-mono">{room?.pin}</span>
+                </div>
+                <button onClick={() => setMode('scan')} className="p-2 bg-indigo-600 rounded-full text-white shadow-lg shadow-indigo-500/20">
+                    <UserPlus className="w-6 h-6" />
+                </button>
+            </div>
+
+            <div className="flex-1 flex flex-col items-center gap-8">
+                {/* Room QR */}
+                <div className="bg-white p-6 rounded-3xl shadow-2xl relative group">
+                    <QRCode value={room?.pin} size={200} level="H" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        <span className="bg-black/80 text-white text-xs px-2 py-1 rounded-full font-bold">Room PIN</span>
+                    </div>
+                </div>
+
+                <div className="text-center max-w-xs">
+                    <h3 className="text-zinc-400 font-bold text-sm uppercase tracking-widest mb-2">How to Join</h3>
+                    <p className="text-zinc-600 text-xs leading-relaxed">
+                        Friends can scan this QR code to join this room instantly.
+                        <br />Or send them the PIN:
+                        <span className="text-white font-mono font-bold ml-1">{room?.pin}</span>
+                    </p>
+                </div>
+
+                {/* Participants Scroller or List could go here, for now placeholder */}
+                <div className="w-full bg-zinc-900/50 rounded-2xl p-4 flex-1 max-h-[200px] overflow-y-auto">
+                    <h4 className="text-zinc-500 text-xs font-bold uppercase mb-3">Members</h4>
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700">
+                                <span className="text-xs font-bold text-zinc-400">ME</span>
+                            </div>
+                            <span className="text-white text-sm font-bold">You</span>
+                            <span className="ml-auto text-xs bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full">Owner</span>
+                        </div>
+                        {/* We would map participants here ideally */}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const AddFriendView = ({
     setView,
@@ -333,6 +412,9 @@ interface DashboardProps {
     setIsChatOpen: (vals: boolean) => void;
     sendCallSignal: (id: string) => void;
     isRemoteSpeaking: boolean;
+    rooms: any[];
+    onCreateRoom: () => void;
+    onSelectRoom: (room: any) => void;
 }
 
 const Dashboard = ({
@@ -348,7 +430,10 @@ const Dashboard = ({
     setActiveFriend,
     setIsChatOpen,
     sendCallSignal,
-    isRemoteSpeaking
+    isRemoteSpeaking,
+    rooms,
+    onCreateRoom,
+    onSelectRoom
 }: DashboardProps) => {
     // Filter friends based on search query
     const filteredFriends = friends.filter((friend: any) => {
@@ -401,6 +486,9 @@ const Dashboard = ({
                     </div>
                 </div>
 
+
+
+
                 {/* Friend Requests - Compact */}
                 {friendRequests.received.length > 0 && (
                     <div className="mb-3">
@@ -422,8 +510,46 @@ const Dashboard = ({
                     </div>
                 )}
 
+
+
+
+                {/* Rooms Section */}
+                <div className="flex justify-between items-center mb-2 mt-4">
+                    <h3 className="text-zinc-500 font-bold text-[10px] uppercase tracking-widest ml-1">
+                        ROOMS
+                    </h3>
+                    <button onClick={onCreateRoom} className="text-indigo-400 text-[10px] font-bold uppercase tracking-wide hover:text-indigo-300">
+                        + NEW
+                    </button>
+                </div>
+
+                {/* Rooms List - Horizontal Scroll */}
+                <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+                    <button
+                        onClick={onCreateRoom}
+                        className="flex-shrink-0 w-28 h-20 bg-zinc-900/50 border border-dashed border-zinc-800 rounded-xl flex flex-col items-center justify-center gap-1 hover:bg-zinc-900 transition-all group"
+                    >
+                        <Plus className="w-5 h-5 text-zinc-600 group-hover:text-white" />
+                        <span className="text-[9px] font-bold text-zinc-600 group-hover:text-white uppercase">Create</span>
+                    </button>
+
+                    {rooms.map((room) => (
+                        <button
+                            key={room.id}
+                            onClick={() => onSelectRoom(room)}
+                            className="flex-shrink-0 w-28 h-20 bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-xl p-3 flex flex-col justify-between hover:border-indigo-500/50 transition-all text-left group relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <ChevronRight className="w-3 h-3 text-zinc-400" />
+                            </div>
+                            <span className="text-white font-bold text-xs truncate w-full">{room.name}</span>
+                            <span className="text-zinc-600 font-mono text-[9px]">{room.pin}</span>
+                        </button>
+                    ))}
+                </div>
+
                 {/* Friends Count */}
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex justify-between items-center mb-2 mt-2">
                     <h3 className="text-zinc-500 font-bold text-[10px] uppercase tracking-widest ml-1">
                         FRIENDS {filteredFriends.length > 0 && `(${filteredFriends.length})`}
                     </h3>
@@ -515,11 +641,12 @@ const Dashboard = ({
                 </div>
             </div>
         </div>
+
     );
 };
 
 export function Room() {
-    console.log("🚀 Ten Ten UI Loaded v2.1 (Desktop Fix)");
+    console.log("🚀 Ten Ten UI Loaded v2.2 (Rooms Added)");
     const { user } = useUser();
     const [view, setView] = useState<ViewState>('DASHBOARD');
 
@@ -539,6 +666,8 @@ export function Room() {
     // UI State
     const [userPin, setUserPin] = useState<string>('');
     const [friends, setFriends] = useState<any[]>([]);
+    const [rooms, setRooms] = useState<any[]>([]);
+    const [activeRoom, setActiveRoom] = useState<any>(null);
     const friendsRef = useRef<any[]>([]); // Ref to access friends inside effect without trigger
     useEffect(() => { friendsRef.current = friends; }, [friends]);
 
@@ -682,7 +811,7 @@ export function Room() {
         };
 
         // Optimistic update
-        // setChatMessages(prev => [...prev, { ...msg, id: 'temp-' + Date.now() }]); 
+        // setChatMessages(prev => [...prev, {...msg, id: 'temp-' + Date.now() }]);
 
         const { error } = await supabase.from('messages').insert(msg);
         if (error) console.error("Send failed", error);
@@ -820,9 +949,10 @@ export function Room() {
 
         const fetchFriends = async () => {
             try {
-                const [fRes, rRes] = await Promise.all([
+                const [fRes, rRes, roomRes] = await Promise.all([
                     fetch('/api/friends'),
-                    fetch('/api/friend-request')
+                    fetch('/api/friend-request'),
+                    fetch('/api/rooms')
                 ]);
 
                 if (fRes.ok) {
@@ -833,6 +963,11 @@ export function Room() {
                 if (rRes.ok) {
                     const rData = await rRes.json();
                     setFriendRequests(rData);
+                }
+
+                if (roomRes.ok) {
+                    const roomData = await roomRes.json();
+                    setRooms(roomData || []);
                 }
             } catch (e) { console.error("❌ Error polling:", e); }
         };
@@ -919,6 +1054,50 @@ export function Room() {
         } catch (e) { alert("Action failed (Network Error)"); }
     };
 
+    const handleCreateRoom = async () => {
+        const name = prompt("Enter Room Name:");
+        if (!name) return;
+
+        try {
+            const res = await fetch('/api/rooms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+
+            if (res.ok) {
+                const newRoom = await res.json();
+                setRooms(prev => [...prev, newRoom]);
+                setActiveRoom(newRoom);
+                setView('ROOM_DETAILS');
+            }
+        } catch (e) { console.error(e); alert('Failed to create room'); }
+    }
+
+    const handleAddMemberToRoom = async (scannedData: string) => {
+        if (!activeRoom) return;
+
+        // Determine if scannedData is a User PIN
+        // Our API handles resolving it
+        try {
+            const res = await fetch('/api/rooms/join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pin: activeRoom.pin,
+                    userPinToAdd: scannedData
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                alert("Member added successfully!");
+            } else {
+                alert(`Failed: ${data.error || data.message || 'Unknown error'}`);
+            }
+        } catch (e) { console.error(e); alert('Failed to add member'); }
+    };
+
     // --- Views ---
 
 
@@ -942,6 +1121,9 @@ export function Room() {
                         setIsChatOpen={setIsChatOpen}
                         sendCallSignal={sendCallSignal}
                         isRemoteSpeaking={isRemoteSpeaking}
+                        rooms={rooms}
+                        onCreateRoom={handleCreateRoom}
+                        onSelectRoom={(r) => { setActiveRoom(r); setView('ROOM_DETAILS'); }}
                     />}
                     {view === 'CALL' && (
                         <div className="flex flex-col h-[100dvh] bg-black relative overflow-hidden">
@@ -1217,6 +1399,14 @@ export function Room() {
                         <EditProfileView
                             user={user}
                             setView={setView}
+                        />
+                    )}
+                    {view === 'ROOM_DETAILS' && (
+                        <RoomView
+                            room={activeRoom}
+                            setView={setView}
+                            userPin={userPin}
+                            onAddMember={handleAddMemberToRoom}
                         />
                     )}
                 </AnimatePresence>
